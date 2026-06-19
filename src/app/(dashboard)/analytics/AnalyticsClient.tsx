@@ -1,70 +1,196 @@
 "use client";
 
-import { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useState, useMemo } from 'react';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-export default function AnalyticsClient({ trades }: { trades: any[] }) {
-  
-  // Calculate P&L by Asset Class
-  const assetData = useMemo(() => {
+export default function AnalyticsClient({ trades: initialTrades }: { trades: any[] }) {
+  const [filterDate, setFilterDate] = useState('All');
+  const [filterAsset, setFilterAsset] = useState('All');
+  const [filterSetup, setFilterSetup] = useState('All');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // Extract unique filter options
+  const assetClasses = Array.from(new Set(initialTrades.map(t => t.assetClass))).filter(Boolean);
+  const setupTags = Array.from(new Set(initialTrades.map(t => t.setupTag))).filter(Boolean);
+
+  // 1. Filtered Trades (sorted chronologically)
+  const trades = useMemo(() => {
+    return initialTrades
+      .filter(t => {
+        if (filterAsset !== 'All' && t.assetClass !== filterAsset) return false;
+        if (filterSetup !== 'All' && t.setupTag !== filterSetup) return false;
+        if (filterDate !== 'All') {
+          const tradeDate = new Date(t.entryDate);
+          const now = new Date();
+          if (filterDate === 'This Month') {
+            if (tradeDate.getMonth() !== now.getMonth() || tradeDate.getFullYear() !== now.getFullYear()) return false;
+          }
+          if (filterDate === 'This Year') {
+            if (tradeDate.getFullYear() !== now.getFullYear()) return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime());
+  }, [initialTrades, filterAsset, filterSetup, filterDate]);
+
+  // 2. Top-Level Stats
+  const stats = useMemo(() => {
+    let grossProfit = 0;
+    let grossLoss = 0;
+    let wins = 0;
+    let losses = 0;
+    let largestWin = 0;
+    let largestLoss = 0;
+    let totalR = 0;
+    let rCount = 0;
+
+    trades.forEach(t => {
+      const pnl = t.pnl || 0;
+      if (pnl > 0) {
+        grossProfit += pnl;
+        wins++;
+        if (pnl > largestWin) largestWin = pnl;
+      } else if (pnl < 0) {
+        grossLoss += Math.abs(pnl);
+        losses++;
+        if (pnl < largestLoss) largestLoss = pnl;
+      }
+
+      // R-Multiple calculation
+      if (t.stopLoss && t.entryPrice) {
+        const riskPerShare = Math.abs(t.entryPrice - t.stopLoss);
+        if (riskPerShare > 0) {
+          const rMultiple = pnl / (riskPerShare * t.positionSize);
+          totalR += rMultiple;
+          rCount++;
+        }
+      }
+    });
+
+    const netPnl = grossProfit - grossLoss;
+    const winRate = trades.length > 0 ? (wins / trades.length) * 100 : 0;
+    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? 999 : 0);
+    const avgWin = wins > 0 ? grossProfit / wins : 0;
+    const avgLoss = losses > 0 ? grossLoss / losses : 0;
+    const avgR = rCount > 0 ? totalR / rCount : 0;
+
+    return { netPnl, winRate, profitFactor, avgWin, avgLoss, avgR, total: trades.length, largestWin, largestLoss };
+  }, [trades]);
+
+  // 3. Chart Data Preparations
+  const equityData = useMemo(() => {
+    let cumulative = 0;
+    return trades.map((t, i) => {
+      cumulative += (t.pnl || 0);
+      return {
+        name: `Trade ${i + 1}`,
+        date: new Date(t.entryDate).toLocaleDateString(),
+        equity: cumulative
+      };
+    });
+  }, [trades]);
+
+  const pnlByPeriodData = useMemo(() => {
     const map = new Map<string, number>();
     trades.forEach(t => {
-      map.set(t.assetClass, (map.get(t.assetClass) || 0) + (t.pnl || 0));
+      const d = new Date(t.entryDate).toLocaleDateString();
+      map.set(d, (map.get(d) || 0) + (t.pnl || 0));
     });
-    return Array.from(map.entries()).map(([name, pnl]) => ({ name, pnl }));
+    return Array.from(map.entries()).map(([date, pnl]) => ({ date, pnl }));
   }, [trades]);
 
-  // Calculate Win Rate by Day of Week
-  const dowData = useMemo(() => {
-    const map = new Map<number, { wins: number; total: number }>();
+  const winRateBySetupData = useMemo(() => {
+    const map = new Map<string, { wins: number; total: number }>();
     trades.forEach(t => {
-      const day = new Date(t.entryDate).getDay(); // 0 is Sunday
-      const stats = map.get(day) || { wins: 0, total: 0 };
-      stats.total += 1;
-      if (t.pnl > 0) stats.wins += 1;
-      map.set(day, stats);
+      const tag = t.setupTag || 'None';
+      const stat = map.get(tag) || { wins: 0, total: 0 };
+      stat.total++;
+      if ((t.pnl || 0) > 0) stat.wins++;
+      map.set(tag, stat);
     });
-    
+    return Array.from(map.entries()).map(([name, stat]) => ({
+      name,
+      winRate: (stat.wins / stat.total) * 100,
+      total: stat.total
+    })).sort((a, b) => b.total - a.total);
+  }, [trades]);
+
+  const pnlByDowData = useMemo(() => {
+    const map = new Map<number, number>();
+    trades.forEach(t => {
+      const day = new Date(t.entryDate).getDay();
+      map.set(day, (map.get(day) || 0) + (t.pnl || 0));
+    });
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return Array.from(map.entries())
-      .map(([day, stats]) => ({
-        day: days[day],
-        winRate: (stats.wins / stats.total) * 100,
-        sort: day
-      }))
-      .sort((a, b) => a.sort - b.sort);
+    return Array.from(map.entries()).map(([day, pnl]) => ({ day: days[day], pnl, sort: day })).sort((a, b) => a.sort - b.sort);
   }, [trades]);
 
-  // Long vs Short Pie Chart
-  const directionData = useMemo(() => {
-    let longPnl = 0, shortPnl = 0;
+  const pnlByTodData = useMemo(() => {
+    const map = new Map<number, number>();
     trades.forEach(t => {
-      if (t.direction === 'Long') longPnl += (t.pnl || 0);
-      if (t.direction === 'Short') shortPnl += (t.pnl || 0);
+      const hour = new Date(t.entryDate).getHours();
+      map.set(hour, (map.get(hour) || 0) + (t.pnl || 0));
     });
-    return [
-      { name: 'Long', value: Math.abs(longPnl) },
-      { name: 'Short', value: Math.abs(shortPnl) }
-    ];
+    return Array.from(map.entries()).map(([hour, pnl]) => ({ hour: `${hour}:00`, pnl, sort: hour })).sort((a, b) => a.sort - b.sort);
   }, [trades]);
+
+  const mistakeData = useMemo(() => {
+    const map = new Map<string, { count: number, pnlImpact: number }>();
+    trades.forEach(t => {
+      if (t.mistakeTags) {
+        t.mistakeTags.split(',').forEach((tag: string) => {
+          const tName = tag.trim();
+          if (!tName) return;
+          const stat = map.get(tName) || { count: 0, pnlImpact: 0 };
+          stat.count++;
+          stat.pnlImpact += (t.pnl || 0);
+          map.set(tName, stat);
+        });
+      }
+    });
+    return Array.from(map.entries()).map(([name, stat]) => ({ name, ...stat })).sort((a, b) => b.count - a.count);
+  }, [trades]);
+
+  // Calendar grouping
+  const calendarData = useMemo(() => {
+    const map = new Map<string, { pnl: number, trades: any[] }>();
+    trades.forEach(t => {
+      const dString = new Date(t.entryDate).toISOString().split('T')[0];
+      const existing = map.get(dString) || { pnl: 0, trades: [] };
+      existing.pnl += (t.pnl || 0);
+      existing.trades.push(t);
+      map.set(dString, existing);
+    });
+    return map;
+  }, [trades]);
+
+  const getCalendarGrid = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const grid = [];
+    for (let i = 0; i < firstDay; i++) grid.push(null);
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      grid.push({ date: dStr, day: i, data: calendarData.get(dStr) });
+    }
+    return grid;
+  };
+
   const COLORS = ['#00E054', '#FF453A'];
 
-  if (trades.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <h2 style={{ marginBottom: '1rem' }}>No Data Yet</h2>
-        <p className="text-muted">You need to log some closed trades to see analytics.</p>
-      </div>
-    );
-  }
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label, formatterType }: any) => {
     if (active && payload && payload.length) {
       return (
         <div style={{ backgroundColor: 'var(--surface)', padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '8px' }}>
-          <p className="text-muted" style={{ marginBottom: '0.25rem', fontSize: '0.8rem' }}>{label || payload[0].name}</p>
-          <p className="mono fw-bold" style={{ color: payload[0].value >= 0 ? 'var(--accent)' : 'var(--text-main)' }}>
-            {payload[0].name === 'winRate' ? `${payload[0].value.toFixed(1)}%` : `$${payload[0].value.toFixed(2)}`}
+          <p className="text-muted" style={{ marginBottom: '0.25rem', fontSize: '0.8rem' }}>{label || payload[0].payload.name || payload[0].payload.date}</p>
+          <p className="mono fw-bold" style={{ color: payload[0].value >= 0 ? 'var(--accent)' : (formatterType === 'percent' ? 'var(--accent)' : 'var(--danger)') }}>
+            {formatterType === 'percent' ? `${payload[0].value.toFixed(1)}%` : `$${payload[0].value.toFixed(2)}`}
           </p>
         </div>
       );
@@ -72,24 +198,125 @@ export default function AnalyticsClient({ trades }: { trades: any[] }) {
     return null;
   };
 
-  return (
-    <div className="animate-fade-in">
-      <h2 style={{ marginBottom: '2rem' }}>Detailed Analytics</h2>
+  if (initialTrades.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+        <h2 style={{ marginBottom: '1rem' }}>No Data Yet</h2>
+        <p className="text-muted">Log some closed trades to generate your analytics engine.</p>
+      </div>
+    );
+  }
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
-        
-        {/* Asset Class P&L */}
-        <div className="card" style={{ height: '350px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Net P&L by Asset Class</h3>
+  const statCardStyle = { padding: '1.5rem', display: 'flex', flexDirection: 'column' as const, justifyContent: 'center' };
+
+  return (
+    <div className="animate-fade-in" style={{ position: 'relative' }}>
+      
+      {/* Header & Filters */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h2>Analytics Engine</h2>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <select className="form-input" value={filterDate} onChange={e => setFilterDate(e.target.value)} style={{ width: 'auto', padding: '0.5rem 1rem' }}>
+            <option value="All">All Time</option>
+            <option value="This Month">This Month</option>
+            <option value="This Year">This Year</option>
+          </select>
+          <select className="form-input" value={filterAsset} onChange={e => setFilterAsset(e.target.value)} style={{ width: 'auto', padding: '0.5rem 1rem' }}>
+            <option value="All">All Assets</option>
+            {assetClasses.map(a => <option key={a as string} value={a as string}>{a as string}</option>)}
+          </select>
+          <select className="form-input" value={filterSetup} onChange={e => setFilterSetup(e.target.value)} style={{ width: 'auto', padding: '0.5rem 1rem' }}>
+            <option value="All">All Setups</option>
+            {setupTags.map(s => <option key={s as string} value={s as string}>{s as string}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Top Level Stats Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Net P&L</span>
+          <span className={`mono fw-bold ${stats.netPnl >= 0 ? 'text-accent' : 'text-danger'}`} style={{ fontSize: '1.5rem' }}>
+            {stats.netPnl >= 0 ? '+' : ''}${stats.netPnl.toFixed(2)}
+          </span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Win Rate</span>
+          <span className="mono fw-bold" style={{ fontSize: '1.5rem', color: stats.winRate >= 50 ? 'var(--accent)' : 'var(--danger)' }}>
+            {stats.winRate.toFixed(1)}%
+          </span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Profit Factor</span>
+          <span className="mono fw-bold" style={{ fontSize: '1.5rem' }}>{stats.profitFactor.toFixed(2)}</span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Avg Win</span>
+          <span className="mono fw-bold text-accent" style={{ fontSize: '1.5rem' }}>+${stats.avgWin.toFixed(2)}</span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Avg Loss</span>
+          <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>-${Math.abs(stats.avgLoss).toFixed(2)}</span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Avg R-Multiple</span>
+          <span className="mono fw-bold" style={{ fontSize: '1.5rem', color: stats.avgR >= 1 ? 'var(--accent)' : 'var(--text-main)' }}>
+            {stats.avgR.toFixed(2)}R
+          </span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Total Trades</span>
+          <span className="mono fw-bold" style={{ fontSize: '1.5rem' }}>{stats.total}</span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Largest Win</span>
+          <span className="mono fw-bold text-accent" style={{ fontSize: '1.5rem' }}>+${stats.largestWin.toFixed(2)}</span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Largest Loss</span>
+          <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>${stats.largestLoss.toFixed(2)}</span>
+        </div>
+      </div>
+
+      {/* Main Charts */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem', marginBottom: '2rem' }}>
+        <div className="card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1.5rem' }}>Cumulative Equity Curve</h3>
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={assetData} margin={{ left: -20 }}>
+              <AreaChart data={equityData} margin={{ left: -20 }}>
+                <defs>
+                  <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="equity" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEquity)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Charts Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+        
+        {/* Daily P&L Bars */}
+        <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Daily Net P&L</h3>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pnlByPeriodData} margin={{ left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
-                  {assetData.map((entry, index) => (
+                  {pnlByPeriodData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? 'var(--accent)' : 'var(--danger)'} />
                   ))}
                 </Bar>
@@ -98,50 +325,157 @@ export default function AnalyticsClient({ trades }: { trades: any[] }) {
           </div>
         </div>
 
-        {/* Win Rate by DOW */}
-        <div className="card" style={{ height: '350px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Win Rate by Day of Week</h3>
+        {/* Win Rate by Setup */}
+        <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Win Rate by Setup</h3>
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dowData} margin={{ left: -20 }}>
+              <BarChart data={winRateBySetupData} margin={{ left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="day" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip formatterType="percent" />} />
                 <Bar dataKey="winRate" fill="var(--accent)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Long vs Short */}
-        <div className="card" style={{ height: '350px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Gross P&L: Long vs Short</h3>
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* P&L by Time of Day */}
+        <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>P&L by Time of Day (Hour)</h3>
+          <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={directionData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value" stroke="none">
-                  {directionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
+              <BarChart data={pnlByTodData} margin={{ left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="hour" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip content={<CustomTooltip />} />
-              </PieChart>
+                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  {pnlByTodData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? 'var(--accent)' : 'var(--danger)'} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
-            <div style={{ position: 'absolute', right: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '12px', height: '12px', backgroundColor: COLORS[0], borderRadius: '2px' }}></div>
-                <span>Long</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '12px', height: '12px', backgroundColor: COLORS[1], borderRadius: '2px' }}></div>
-                <span>Short</span>
-              </div>
-            </div>
+          </div>
+        </div>
+
+        {/* Mistake Frequency */}
+        <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Mistake Frequency</h3>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={mistakeData} margin={{ left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip content={({ active, payload, label }: any) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div style={{ backgroundColor: 'var(--surface)', padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                        <p className="text-muted" style={{ marginBottom: '0.25rem', fontSize: '0.8rem' }}>{label}</p>
+                        <p className="mono fw-bold">Occurrences: {payload[0].value}</p>
+                        <p className="mono fw-bold text-danger">P&L Impact: ${payload[0].payload.pnlImpact.toFixed(2)}</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }} />
+                <Bar dataKey="count" fill="var(--danger)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
       </div>
+
+      {/* Calendar View */}
+      <div className="card">
+        <h3 style={{ marginBottom: '1.5rem' }}>Calendar View</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+            <div key={d} style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>{d}</div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
+          {getCalendarGrid().map((cell, idx) => {
+            if (!cell) return <div key={idx} style={{ padding: '2rem', backgroundColor: 'transparent' }}></div>;
+            
+            const hasData = cell.data && cell.data.trades.length > 0;
+            const isPositive = cell.data && cell.data.pnl >= 0;
+            const bgColor = !hasData ? 'var(--surface-light)' : (isPositive ? 'rgba(0, 224, 84, 0.1)' : 'rgba(255, 69, 58, 0.1)');
+            const textColor = !hasData ? 'var(--text-muted)' : (isPositive ? 'var(--accent)' : 'var(--danger)');
+            
+            return (
+              <div 
+                key={idx} 
+                onClick={() => hasData && setSelectedDate(cell.date)}
+                style={{ 
+                  backgroundColor: bgColor, 
+                  borderRadius: '8px', 
+                  padding: '0.75rem', 
+                  minHeight: '80px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  cursor: hasData ? 'pointer' : 'default',
+                  transition: 'transform 150ms ease'
+                }}
+                className={hasData ? 'hover-scale' : ''}
+              >
+                <div style={{ color: 'var(--text-main)', fontWeight: 'bold', fontSize: '0.9rem' }}>{cell.day}</div>
+                {hasData && (
+                  <div className="mono fw-bold" style={{ color: textColor, fontSize: '0.85rem', textAlign: 'right' }}>
+                    {isPositive ? '+' : ''}${cell.data!.pnl.toFixed(2)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Side Panel for Day Details */}
+      {selectedDate && (
+        <>
+          <div 
+            onClick={() => setSelectedDate(null)}
+            className="animate-fade-in"
+            style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100 }}
+          ></div>
+          <div 
+            className="animate-slide-up" // Using slide up for now, could be slide-left if we had keyframes for it
+            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', backgroundColor: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 101, padding: '2rem', overflowY: 'auto' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h3>Trades on {selectedDate}</h3>
+              <button className="btn btn-ghost" onClick={() => setSelectedDate(null)}>Close</button>
+            </div>
+            
+            {calendarData.get(selectedDate)?.trades.map(t => (
+              <div key={t.id} className="card" style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--surface-light)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span className="mono fw-bold">{t.ticker.toUpperCase()}</span>
+                  <span className={`mono fw-bold ${t.pnl >= 0 ? 'text-accent' : 'text-danger'}`}>
+                    {t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
+                  <span className={`badge ${t.direction === 'Long' ? 'win' : 'loss'}`}>{t.direction}</span>
+                  {t.setupTag && <span className="badge" style={{ backgroundColor: 'var(--bg-color)' }}>{t.setupTag}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Add a tiny hover-scale style dynamically */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .hover-scale:hover { transform: scale(1.02); }
+      `}} />
+
     </div>
   );
 }
