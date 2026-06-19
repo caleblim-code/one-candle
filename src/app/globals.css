@@ -61,16 +61,25 @@ a {
   padding: 0.875rem 1.75rem;
   border-radius: 100px;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 150ms ease;
   cursor: pointer;
   border: none;
   font-size: 1rem;
   font-family: inherit;
+  outline: none;
 }
 
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 4px var(--accent);
 }
 
 .btn-primary {
@@ -80,7 +89,7 @@ a {
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(0, 224, 84, 0.3);
 }
 
@@ -127,7 +136,8 @@ a {
   color: var(--text-main);
   font-family: inherit;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: all 150ms ease;
+  outline: none;
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -166,3 +176,76 @@ a {
   color: var(--danger);
   background: rgba(255, 69, 58, 0.1);
 }
+
+/* Animations & UI Components */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 150ms ease forwards;
+}
+
+.animate-pop-in {
+  animation: popIn 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUpFade 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Spinner inline */
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 750ms linear infinite;
+  margin-right: 0.5rem;
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-light) 25%, rgba(255,255,255,0.05) 50%, var(--surface-light) 75%);
+  background-size: 200% 100%;
+  animation: pulse 1.5s ease-in-out infinite, shimmer 2s infinite linear;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Interactive elements global */
+button, a, input[type="submit"], input[type="button"], select {
+  cursor: pointer;
+}
+input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]), textarea {
+  cursor: text;
+}
+

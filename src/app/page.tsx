@@ -106,16 +106,21 @@ export default function LandingPage() {
 
   const toggleFaq = (idx: number) => {
     if (openFaq === idx) {
-      if (faqContentRefs.current[idx]) faqContentRefs.current[idx]!.style.maxHeight = '0';
+      if (faqContentRefs.current[idx]) {
+        faqContentRefs.current[idx]!.style.maxHeight = '0';
+        faqContentRefs.current[idx]!.style.opacity = '0';
+      }
       setOpenFaq(null);
     } else {
       // close previous
       if (openFaq !== null && faqContentRefs.current[openFaq]) {
         faqContentRefs.current[openFaq]!.style.maxHeight = '0';
+        faqContentRefs.current[openFaq]!.style.opacity = '0';
       }
       setOpenFaq(idx);
       if (faqContentRefs.current[idx]) {
         faqContentRefs.current[idx]!.style.maxHeight = faqContentRefs.current[idx]!.scrollHeight + 'px';
+        faqContentRefs.current[idx]!.style.opacity = '1';
       }
     }
   };

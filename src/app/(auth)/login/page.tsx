@@ -52,9 +52,10 @@ export default function LoginPage() {
             <label className="form-label">Email</label>
             <input 
               type="email" 
-              className="form-input" 
+              className={`form-input ${error && !email ? 'border-danger' : ''}`} 
+              style={error && !email ? { borderColor: 'var(--danger)' } : {}}
               value={email} 
-              onChange={e => setEmail(e.target.value)} 
+              onChange={e => { setEmail(e.target.value); setError(''); }} 
               required 
               placeholder="you@example.com"
             />
@@ -66,14 +67,16 @@ export default function LoginPage() {
             </div>
             <input 
               type="password" 
-              className="form-input" 
+              className={`form-input ${error && !password ? 'border-danger' : ''}`} 
+              style={error && !password ? { borderColor: 'var(--danger)' } : {}}
               value={password} 
-              onChange={e => setPassword(e.target.value)} 
+              onChange={e => { setPassword(e.target.value); setError(''); }} 
               required 
               placeholder="••••••••"
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', position: 'relative' }} disabled={loading}>
+            {loading ? <span className="spinner"></span> : null}
             {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>

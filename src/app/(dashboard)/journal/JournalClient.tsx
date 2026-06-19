@@ -10,6 +10,8 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
   const [filterStatus, setFilterStatus] = useState('All');
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [tradeToDelete, setTradeToDelete] = useState<string | null>(null);
 
   const filteredTrades = trades.filter(t => {
     const matchesSearch = t.ticker.toLowerCase().includes(searchTerm.toLowerCase());
@@ -18,16 +20,29 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
     return matchesSearch && matchesAsset && matchesStatus;
   });
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this trade? This cannot be undone.')) {
-      try {
-        const res = await fetch(`/api/trades/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          setTrades(trades.filter(t => t.id !== id));
-        }
-      } catch (err) {
-        alert('Failed to delete trade');
+  const confirmDelete = (id: string) => {
+    setTradeToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!tradeToDelete) return;
+    
+    // Optimistic UI update
+    const previousTrades = [...trades];
+    setTrades(trades.filter(t => t.id !== tradeToDelete));
+    setDeleteModalOpen(false);
+    
+    try {
+      const res = await fetch(`/api/trades/${tradeToDelete}`, { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error('Failed to delete');
       }
+    } catch (err) {
+      alert('Failed to delete trade. Reverting...');
+      setTrades(previousTrades); // Revert on failure
+    } finally {
+      setTradeToDelete(null);
     }
   };
 
@@ -110,8 +125,9 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
                   <td style={{ padding: '1rem' }}><span style={{ color: trade.status === 'Open' ? 'var(--accent)' : 'var(--text-muted)' }}>{trade.status}</span></td>
                 </tr>
                 {expandedId === trade.id && (
-                  <tr style={{ backgroundColor: 'var(--surface-light)' }}>
-                    <td colSpan={8} style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                  <tr>
+                    <td colSpan={8} style={{ padding: 0 }}>
+                      <div className="animate-slide-up" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface-light)' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                         <div>
                           <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Trade Details</h4>
@@ -139,9 +155,10 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
                           </p>
                           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
                             <button className="btn btn-ghost" onClick={() => alert('Edit feature coming soon')} style={{ padding: '0.5rem 1rem' }}>Edit</button>
-                            <button className="btn btn-danger" onClick={() => handleDelete(trade.id)} style={{ padding: '0.5rem 1rem' }}>Delete</button>
+                            <button className="btn btn-danger" onClick={() => confirmDelete(trade.id)} style={{ padding: '0.5rem 1rem' }}>Delete</button>
                           </div>
                         </div>
+                      </div>
                       </div>
                     </td>
                   </tr>
@@ -151,6 +168,19 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
           </tbody>
         </table>
       </div>
+
+      {deleteModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card animate-pop-in" style={{ maxWidth: '400px', width: '100%', margin: '0 1rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Delete Trade</h3>
+            <p className="text-muted" style={{ marginBottom: '2rem' }}>Are you sure you want to delete this trade? This action cannot be undone.</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => { setDeleteModalOpen(false); setTradeToDelete(null); }}>Cancel</button>
+              <button className="btn btn-danger" onClick={handleDelete}>Delete Permanently</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

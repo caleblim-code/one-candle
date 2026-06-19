@@ -65,7 +65,7 @@ export default function SignupPage() {
               type="text" 
               className="form-input" 
               value={name} 
-              onChange={e => setName(e.target.value)} 
+              onChange={e => { setName(e.target.value); setError(''); }} 
               required 
               placeholder="John Doe"
             />
@@ -76,7 +76,7 @@ export default function SignupPage() {
               type="email" 
               className="form-input" 
               value={email} 
-              onChange={e => setEmail(e.target.value)} 
+              onChange={e => { setEmail(e.target.value); setError(''); }} 
               required 
               placeholder="you@example.com"
             />
@@ -86,8 +86,9 @@ export default function SignupPage() {
             <input 
               type="password" 
               className="form-input" 
+              style={password.length > 0 && password.length < 8 ? { borderColor: 'var(--danger)' } : {}}
               value={password} 
-              onChange={e => setPassword(e.target.value)} 
+              onChange={e => { setPassword(e.target.value); setError(''); }} 
               required 
               placeholder="Min 8 characters"
             />
@@ -97,13 +98,15 @@ export default function SignupPage() {
             <input 
               type="password" 
               className="form-input" 
+              style={confirmPassword.length > 0 && confirmPassword !== password ? { borderColor: 'var(--danger)' } : {}}
               value={confirmPassword} 
-              onChange={e => setConfirmPassword(e.target.value)} 
+              onChange={e => { setConfirmPassword(e.target.value); setError(''); }} 
               required 
               placeholder="Confirm password"
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', position: 'relative' }} disabled={loading}>
+            {loading ? <span className="spinner"></span> : null}
             {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>

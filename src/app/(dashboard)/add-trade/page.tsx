@@ -140,11 +140,11 @@ export default function AddTradePage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Entry Price</label>
-                <input required type="number" step="any" name="entryPrice" className="form-input mono" value={formData.entryPrice} onChange={handleChange} />
+                <input required type="number" step="any" name="entryPrice" className="form-input mono" style={!formData.entryPrice ? { borderColor: 'var(--danger)' } : {}} value={formData.entryPrice} onChange={handleChange} />
               </div>
               <div className="form-group">
                 <label className="form-label">Position Size</label>
-                <input required type="number" step="any" name="positionSize" className="form-input mono" value={formData.positionSize} onChange={handleChange} />
+                <input required type="number" step="any" name="positionSize" className="form-input mono" style={!formData.positionSize ? { borderColor: 'var(--danger)' } : {}} value={formData.positionSize} onChange={handleChange} />
               </div>
               <div className="form-group">
                 <label className="form-label">Fees / Commissions</label>
@@ -154,7 +154,7 @@ export default function AddTradePage() {
               {formData.status === 'Closed' && (
                 <div className="form-group">
                   <label className="form-label">Exit Price</label>
-                  <input required type="number" step="any" name="exitPrice" className="form-input mono" value={formData.exitPrice} onChange={handleChange} />
+                  <input required type="number" step="any" name="exitPrice" className="form-input mono" style={formData.status === 'Closed' && !formData.exitPrice ? { borderColor: 'var(--danger)' } : {}} value={formData.exitPrice} onChange={handleChange} />
                 </div>
               )}
               <div className="form-group">
@@ -182,7 +182,8 @@ export default function AddTradePage() {
             </div>
 
             <div style={{ marginTop: '2rem' }}>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
+              <button type="submit" className="btn btn-primary" style={{ position: 'relative' }} disabled={loading}>
+                {loading ? <span className="spinner"></span> : null}
                 {loading ? 'Saving...' : 'Save Trade'}
               </button>
             </div>
