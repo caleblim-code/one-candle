@@ -1,12 +1,23 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function PlaybooksClient({ initialPlaybooks }: { initialPlaybooks: any[] }) {
   const [playbooks, setPlaybooks] = useState(initialPlaybooks);
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', rules: '' });
+  
+  const initialForm = {
+    name: '',
+    description: '',
+    entryCriteria: '',
+    exitCriteria: '',
+    riskRules: '',
+    chartNotes: '',
+    tags: ''
+  };
+  const [formData, setFormData] = useState(initialForm);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,9 +30,9 @@ export default function PlaybooksClient({ initialPlaybooks }: { initialPlaybooks
       });
       if (res.ok) {
         const newPlaybook = await res.json();
-        setPlaybooks([newPlaybook, ...playbooks]);
+        setPlaybooks([{ ...newPlaybook, trades: [] }, ...playbooks]);
         setIsAdding(false);
-        setFormData({ name: '', description: '', rules: '' });
+        setFormData(initialForm);
       }
     } catch (err) {
       alert('Failed to create playbook');
@@ -30,8 +41,12 @@ export default function PlaybooksClient({ initialPlaybooks }: { initialPlaybooks
     }
   };
 
-  const handleDelete = async (id: string) => {
-    // Optimistic UI
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!confirm('Are you sure you want to delete this playbook?')) return;
+    
     const previous = [...playbooks];
     setPlaybooks(playbooks.filter(p => p.id !== id));
     
@@ -55,24 +70,45 @@ export default function PlaybooksClient({ initialPlaybooks }: { initialPlaybooks
 
       {isAdding && (
         <div className="card animate-slide-up" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>New Playbook</h3>
+          <h3 style={{ marginBottom: '1.5rem' }}>New Playbook Strategy</h3>
           <form onSubmit={handleAdd}>
-            <div className="form-group">
-              <label className="form-label">Setup Name</label>
-              <input required type="text" className="form-input" style={!formData.name ? { borderColor: 'var(--danger)' } : {}} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Opening Drive Breakout" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+              <div>
+                <div className="form-group">
+                  <label className="form-label">Strategy Name</label>
+                  <input required type="text" className="form-input" style={!formData.name ? { borderColor: 'var(--danger)' } : {}} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Opening Drive Breakout" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description / Core Idea</label>
+                  <textarea className="form-textarea" rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="What is the psychological edge behind this setup?"></textarea>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Entry Criteria (Checklist)</label>
+                  <textarea className="form-textarea" rows={4} value={formData.entryCriteria} onChange={e => setFormData({...formData, entryCriteria: e.target.value})} placeholder="- Price above VWAP&#10;- Relative volume &gt; 2x&#10;- Clear 5min flag"></textarea>
+                </div>
+              </div>
+              <div>
+                <div className="form-group">
+                  <label className="form-label">Exit Criteria (Profit Targets & Trailing)</label>
+                  <textarea className="form-textarea" rows={3} value={formData.exitCriteria} onChange={e => setFormData({...formData, exitCriteria: e.target.value})} placeholder="- Take 50% off at 2R&#10;- Trail stop on remaining below 9EMA"></textarea>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Risk Rules (Stop Loss & Sizing)</label>
+                  <textarea className="form-textarea" rows={3} value={formData.riskRules} onChange={e => setFormData({...formData, riskRules: e.target.value})} placeholder="- Max 1% account risk&#10;- Hard stop below entry candle low"></textarea>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Tags (Comma separated)</label>
+                  <input type="text" className="form-input" value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} placeholder="Trend, Morning, High-Conviction" />
+                </div>
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <input type="text" className="form-input" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Briefly describe the setup condition" />
+            
+            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="btn btn-primary" style={{ position: 'relative', width: '200px' }} disabled={loading}>
+                {loading ? <span className="spinner"></span> : null}
+                {loading ? 'Saving...' : 'Save Playbook'}
+              </button>
             </div>
-            <div className="form-group">
-              <label className="form-label">Checklist / Rules</label>
-              <textarea className="form-textarea" value={formData.rules} onChange={e => setFormData({...formData, rules: e.target.value})} placeholder="- Price must be above VWAP&#10;- Volume &gt; 1M in first 5 mins&#10;- Tight stop below entry candle"></textarea>
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ position: 'relative' }} disabled={loading}>
-              {loading ? <span className="spinner"></span> : null}
-              {loading ? 'Saving...' : 'Save Playbook'}
-            </button>
           </form>
         </div>
       )}
@@ -84,24 +120,57 @@ export default function PlaybooksClient({ initialPlaybooks }: { initialPlaybooks
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
-          {playbooks.map(p => (
-            <div key={p.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)' }}>{p.name}</h3>
-                <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={() => handleDelete(p.id)}>Delete</button>
-              </div>
-              <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>{p.description || 'No description'}</p>
-              
-              <div style={{ flex: 1 }}>
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Rules & Checklist</h4>
-                <div style={{ backgroundColor: 'var(--surface-light)', padding: '1rem', borderRadius: '8px', whiteSpace: 'pre-wrap', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
-                  {p.rules || 'No rules defined.'}
+          {playbooks.map(p => {
+            const trades = p.trades || [];
+            const wins = trades.filter((t: any) => (t.pnl || 0) > 0).length;
+            const winRate = trades.length > 0 ? ((wins / trades.length) * 100).toFixed(1) : '0.0';
+            
+            let totalR = 0;
+            let rCount = 0;
+            trades.forEach((t: any) => {
+              if (t.stopLoss && t.entryPrice && t.pnl) {
+                const risk = Math.abs(t.entryPrice - t.stopLoss);
+                if (risk > 0) {
+                  totalR += t.pnl / (risk * t.positionSize);
+                  rCount++;
+                }
+              }
+            });
+            const avgR = rCount > 0 ? (totalR / rCount).toFixed(2) : '0.00';
+
+            return (
+              <Link href={`/playbooks/${p.id}`} key={p.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="card hover-scale" style={{ display: 'flex', flexDirection: 'column', height: '100%', transition: 'transform 150ms ease, box-shadow 150ms ease', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', color: 'var(--accent)' }}>{p.name}</h3>
+                    <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }} onClick={(e) => handleDelete(p.id, e)}>Delete</button>
+                  </div>
+                  <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem', flex: 1 }}>{p.description || 'No description'}</p>
+                  
+                  <div style={{ backgroundColor: 'var(--surface-light)', padding: '1rem', borderRadius: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', textAlign: 'center' }}>
+                    <div>
+                      <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Trades</div>
+                      <div className="mono fw-bold">{trades.length}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Win Rate</div>
+                      <div className="mono fw-bold" style={{ color: Number(winRate) >= 50 ? 'var(--accent)' : 'inherit' }}>{winRate}%</div>
+                    </div>
+                    <div>
+                      <div className="text-muted" style={{ fontSize: '0.75rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Avg R</div>
+                      <div className="mono fw-bold" style={{ color: Number(avgR) >= 1 ? 'var(--accent)' : 'inherit' }}>{avgR}R</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .hover-scale:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+      `}} />
     </div>
   );
 }

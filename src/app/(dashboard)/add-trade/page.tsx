@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AddTradePage() {
+  const [playbooks, setPlaybooks] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('/api/playbooks').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setPlaybooks(data);
+    }).catch(() => {});
+  }, []);
   const router = useRouter();
   const [formData, setFormData] = useState({
     ticker: '',
@@ -19,6 +25,7 @@ export default function AddTradePage() {
     fees: '0',
     status: 'Closed',
     setupTag: '',
+    playbookId: '',
     mistakeTags: '',
     notes: ''
   });
@@ -168,9 +175,18 @@ export default function AddTradePage() {
             </div>
 
             <h3 style={{ margin: '2rem 0 1rem', fontSize: '1.1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Journaling</h3>
-            <div className="form-group">
-              <label className="form-label">Setup Tag</label>
-              <input type="text" name="setupTag" className="form-input" value={formData.setupTag} onChange={handleChange} placeholder="e.g. Breakout, Reversal" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Setup Tag</label>
+                <input type="text" name="setupTag" className="form-input" value={formData.setupTag} onChange={handleChange} placeholder="e.g. Breakout, Reversal" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Playbook</label>
+                <select name="playbookId" className="form-select" value={formData.playbookId} onChange={handleChange}>
+                  <option value="">No Playbook</option>
+                  {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Mistake Tags (Comma separated)</label>

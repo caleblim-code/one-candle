@@ -22,13 +22,18 @@ model User {
 }
 
 model Playbook {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  rules       String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  entryCriteria String?
+  exitCriteria  String?
+  riskRules     String?
+  chartNotes    String?
+  tags          String?
+  createdAt     DateTime @default(now())
+  trades        Trade[]
 }
 
 model Trade {
@@ -49,6 +54,8 @@ model Trade {
   pnl          Float?
   status       String   @default("Open") // "Open" or "Closed"
   setupTag     String?
+  playbookId   String?
+  playbook     Playbook? @relation(fields: [playbookId], references: [id])
   mistakeTags  String?  // comma separated string
   notes        String?
   createdAt    DateTime @default(now())

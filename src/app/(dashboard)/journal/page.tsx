@@ -9,7 +9,8 @@ export default async function JournalPage() {
 
   const trades = await prisma.trade.findMany({
     where: { userId: session.id },
-    orderBy: { entryDate: 'desc' }
+    orderBy: { entryDate: 'desc' },
+    include: { playbook: { select: { id: true, name: true } } }
   });
 
   return <JournalClient initialTrades={trades} />;

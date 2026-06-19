@@ -137,6 +137,7 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
                             <div><span className="text-muted">Take Profit:</span> {trade.takeProfit ? `$${trade.takeProfit}` : '--'}</div>
                             <div><span className="text-muted">Fees:</span> ${trade.fees}</div>
                             <div><span className="text-muted">Setup:</span> {trade.setupTag || '--'}</div>
+                            <div><span className="text-muted">Playbook:</span> {trade.playbook ? <span style={{ color: 'var(--accent)' }}>{trade.playbook.name}</span> : '--'}</div>
                           </div>
                           
                           {trade.mistakeTags && (

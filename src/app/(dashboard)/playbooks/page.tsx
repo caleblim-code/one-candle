@@ -9,7 +9,8 @@ export default async function PlaybooksPage() {
 
   const playbooks = await prisma.playbook.findMany({
     where: { userId: session.id },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    include: { trades: true }
   });
 
   return <PlaybooksClient initialPlaybooks={playbooks} />;

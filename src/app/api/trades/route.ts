@@ -29,6 +29,7 @@ export async function POST(req: Request) {
         pnl: data.pnl !== null ? parseFloat(data.pnl) : null,
         status: data.status || 'Open',
         setupTag: data.setupTag || null,
+        playbookId: data.playbookId || null,
         mistakeTags: data.mistakeTags || null,
         notes: data.notes || null,
       }
