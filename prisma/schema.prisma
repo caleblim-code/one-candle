@@ -16,8 +16,19 @@ model User {
   name         String
   email        String   @unique
   passwordHash String
-  createdAt    DateTime @default(now())
+  createdAt    DateTime   @default(now())
   trades       Trade[]
+  playbooks    Playbook[]
+}
+
+model Playbook {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  rules       String?
+  createdAt   DateTime @default(now())
 }
 
 model Trade {

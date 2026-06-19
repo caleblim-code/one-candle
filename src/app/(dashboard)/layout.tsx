@@ -2,6 +2,7 @@ import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import LogoutButton from './LogoutButton';
+import SidebarNav from './SidebarNav';
 
 export default async function DashboardLayout({
   children,
@@ -13,21 +14,6 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  const linkStyle = {
-    padding: '0.75rem 1rem',
-    borderRadius: '8px',
-    color: 'var(--text-main)',
-    display: 'block',
-    textDecoration: 'none',
-  };
-
-  const activeLinkStyle = {
-    ...linkStyle,
-    backgroundColor: 'var(--surface-light)',
-    color: 'var(--accent)',
-    fontWeight: '600'
-  };
-
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-color)' }}>
       {/* Sidebar */}
@@ -38,14 +24,7 @@ export default async function DashboardLayout({
           </svg>
           OneCandle
         </div>
-        <nav style={{ padding: '1.5rem 1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <Link href="/dashboard" style={linkStyle}>Overview</Link>
-          <Link href="/journal" style={linkStyle}>Journal</Link>
-          <Link href="/add-trade" style={linkStyle}>Add Trade</Link>
-          <div style={{ ...linkStyle, color: 'var(--text-muted)' }}>Analytics (Soon)</div>
-          <div style={{ ...linkStyle, color: 'var(--text-muted)' }}>Playbooks (Soon)</div>
-          <div style={{ ...linkStyle, color: 'var(--text-muted)' }}>Settings</div>
-        </nav>
+        <SidebarNav />
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
           <LogoutButton />
         </div>
