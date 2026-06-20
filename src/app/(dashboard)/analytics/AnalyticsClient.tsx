@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-export default function AnalyticsClient({ trades: initialTrades }: { trades: any[] }) {
+export default function AnalyticsClient({ initialTrades, initialJournals = [] }: { initialTrades: any[], initialJournals?: any[] }) {
   const [filterDate, setFilterDate] = useState('All');
   const [filterAsset, setFilterAsset] = useState('All');
   const [filterSetup, setFilterSetup] = useState('All');
@@ -151,6 +151,32 @@ export default function AnalyticsClient({ trades: initialTrades }: { trades: any
     });
     return Array.from(map.entries()).map(([name, stat]) => ({ name, ...stat })).sort((a, b) => b.count - a.count);
   }, [trades]);
+
+  const mentalStateData = useMemo(() => {
+    const map = new Map<string, { count: number, pnl: number }>();
+    
+    // Create a map of date string -> mental states
+    const journalMap = new Map<string, string[]>();
+    initialJournals.forEach(j => {
+      if (j.mentalState) {
+        journalMap.set(j.date, j.mentalState.split(',').map((s: string) => s.trim()).filter(Boolean));
+      }
+    });
+
+    trades.forEach(t => {
+      const dString = new Date(t.entryDate).toISOString().split('T')[0];
+      const states = journalMap.get(dString) || ['Untagged'];
+      
+      states.forEach(state => {
+        const existing = map.get(state) || { count: 0, pnl: 0 };
+        existing.count++;
+        existing.pnl += (t.pnl || 0);
+        map.set(state, existing);
+      });
+    });
+
+    return Array.from(map.entries()).map(([name, stat]) => ({ name, ...stat })).sort((a, b) => b.pnl - a.pnl);
+  }, [trades, initialJournals]);
 
   // Calendar grouping
   const calendarData = useMemo(() => {
@@ -388,6 +414,42 @@ export default function AnalyticsClient({ trades: initialTrades }: { trades: any
           </div>
         </div>
 
+      </div>
+
+      {/* Tertiary Charts Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+        {/* P&L by Mental State */}
+        <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>P&L by Mental State (Daily Tags)</h3>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={mentalStateData} margin={{ left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                <Tooltip content={({ active, payload, label }: any) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div style={{ backgroundColor: 'var(--surface)', padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                        <p className="text-muted" style={{ marginBottom: '0.25rem', fontSize: '0.8rem' }}>{label}</p>
+                        <p className="mono fw-bold">Trades: {payload[0].payload.count}</p>
+                        <p className={`mono fw-bold ${payload[0].value >= 0 ? 'text-accent' : 'text-danger'}`}>
+                          P&L: {payload[0].value >= 0 ? '+' : ''}${payload[0].value.toFixed(2)}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }} />
+                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  {mentalStateData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? 'var(--accent)' : 'var(--danger)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* Calendar View */}

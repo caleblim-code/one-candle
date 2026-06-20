@@ -27,6 +27,7 @@ export default function SidebarNav() {
       <Link href="/dashboard" style={getStyle('/dashboard')}>Overview</Link>
       <Link href="/journal" style={getStyle('/journal')}>Journal</Link>
       <Link href="/add-trade" style={getStyle('/add-trade')}>Add Trade</Link>
+      <Link href="/daily-notes" style={getStyle('/daily-notes')}>Daily Notes</Link>
       <Link href="/analytics" style={getStyle('/analytics')}>Analytics</Link>
       <Link href="/playbooks" style={getStyle('/playbooks')}>Playbooks</Link>
       <Link href="/settings" style={getStyle('/settings')}>Settings</Link>

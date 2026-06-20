@@ -8,8 +8,13 @@ export default async function AnalyticsPage() {
   if (!session) redirect('/login');
 
   const trades = await prisma.trade.findMany({
-    where: { userId: session.id, status: 'Closed' },
+    where: { userId: session.id },
+    orderBy: { entryDate: 'desc' }
   });
 
-  return <AnalyticsClient trades={trades} />;
+  const journals = await prisma.dailyJournal.findMany({
+    where: { userId: session.id }
+  });
+
+  return <AnalyticsClient initialTrades={trades} initialJournals={journals} />;
 }

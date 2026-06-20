@@ -19,6 +19,7 @@ model User {
   createdAt    DateTime   @default(now())
   trades       Trade[]
   playbooks    Playbook[]
+  dailyJournals DailyJournal[]
 }
 
 model Playbook {
@@ -59,4 +60,17 @@ model Trade {
   mistakeTags  String?  // comma separated string
   notes        String?
   createdAt    DateTime @default(now())
+}
+
+model DailyJournal {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        String   // Format: YYYY-MM-DD
+  content     String?
+  mentalState String?  // comma separated tags e.g., "Calm, Tilted"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, date])
 }
