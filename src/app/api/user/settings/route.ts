@@ -3,6 +3,26 @@ import { prisma } from '@/lib/prisma';
 import { getSession, encrypt } from '@/lib/session';
 import { cookies } from 'next/headers';
 
+export async function GET(request: Request) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: {
+        setupTags: true,
+        mistakeTags: true,
+        currency: true,
+        defaultAsset: true
+      }
+    });
+    return NextResponse.json(user);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request) {
   try {
     const session = await getSession();
@@ -11,15 +31,23 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email } = body;
+    const { name, email, timezone, currency, defaultAsset, startingBalance, setupTags, mistakeTags } = body;
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
     }
 
+    const updateData: any = { name, email };
+    if (timezone !== undefined) updateData.timezone = timezone;
+    if (currency !== undefined) updateData.currency = currency;
+    if (defaultAsset !== undefined) updateData.defaultAsset = defaultAsset;
+    if (startingBalance !== undefined) updateData.startingBalance = startingBalance;
+    if (setupTags !== undefined) updateData.setupTags = setupTags;
+    if (mistakeTags !== undefined) updateData.mistakeTags = mistakeTags;
+
     const user = await prisma.user.update({
       where: { id: session.id },
-      data: { name, email }
+      data: updateData
     });
 
     // Update session cookie with new name/email

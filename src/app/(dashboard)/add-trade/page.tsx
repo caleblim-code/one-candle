@@ -5,9 +5,24 @@ import { useRouter } from 'next/navigation';
 
 export default function AddTradePage() {
   const [playbooks, setPlaybooks] = useState<any[]>([]);
+  const [setupTagsList, setSetupTagsList] = useState<string[]>(['Breakout', 'Pullback', 'Reversal']);
+  const [mistakeTagsList, setMistakeTagsList] = useState<string[]>(['FOMO', 'Revenge Trading', 'Chasing', 'Hesitation']);
+  const [defaultAsset, setDefaultAsset] = useState('Stocks');
+
   useEffect(() => {
     fetch('/api/playbooks').then(r => r.json()).then(data => {
       if (Array.isArray(data)) setPlaybooks(data);
+    }).catch(() => {});
+    
+    fetch('/api/user/settings').then(r => r.json()).then(data => {
+      if (data) {
+        if (data.setupTags) setSetupTagsList(JSON.parse(data.setupTags));
+        if (data.mistakeTags) setMistakeTagsList(JSON.parse(data.mistakeTags));
+        if (data.defaultAsset) {
+          setDefaultAsset(data.defaultAsset);
+          setFormData(prev => ({ ...prev, assetClass: data.defaultAsset }));
+        }
+      }
     }).catch(() => {});
   }, []);
   const router = useRouter();
@@ -178,7 +193,10 @@ export default function AddTradePage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Setup Tag</label>
-                <input type="text" name="setupTag" className="form-input" value={formData.setupTag} onChange={handleChange} placeholder="e.g. Breakout, Reversal" />
+                <select name="setupTag" className="form-select" value={formData.setupTag} onChange={handleChange}>
+                  <option value="">None</option>
+                  {setupTagsList.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Playbook</label>
@@ -189,8 +207,38 @@ export default function AddTradePage() {
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Mistake Tags (Comma separated)</label>
-              <input type="text" name="mistakeTags" className="form-input" value={formData.mistakeTags} onChange={handleChange} placeholder="e.g. FOMO, Hesitation" />
+              <label className="form-label">Mistake Tags</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {mistakeTagsList.map(tag => {
+                  const isSelected = formData.mistakeTags.includes(tag);
+                  return (
+                    <button 
+                      key={tag} 
+                      type="button"
+                      onClick={() => {
+                        let currentTags = formData.mistakeTags ? formData.mistakeTags.split(',').map(s => s.trim()).filter(Boolean) : [];
+                        if (currentTags.includes(tag)) {
+                          currentTags = currentTags.filter(t => t !== tag);
+                        } else {
+                          currentTags.push(tag);
+                        }
+                        setFormData({ ...formData, mistakeTags: currentTags.join(', ') });
+                      }}
+                      className="badge"
+                      style={{ 
+                        border: isSelected ? '1px solid var(--danger)' : '1px solid var(--border)',
+                        backgroundColor: isSelected ? 'rgba(239, 68, 68, 0.1)' : 'var(--surface-light)',
+                        color: isSelected ? 'var(--danger)' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '0.5rem 0.75rem',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Notes</label>
