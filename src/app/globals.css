@@ -1,13 +1,13 @@
 :root {
-  --bg-color: #060A11;
-  --surface: #0D1321;
-  --surface-light: #151E32;
-  --accent: #00E054;
-  --accent-glow: rgba(0, 224, 84, 0.15);
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --border: rgba(255, 255, 255, 0.08);
-  --danger: #FF453A;
+  --bg-color: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-light: #F1F5F9;
+  --accent: #00D24B;
+  --accent-glow: rgba(0, 210, 75, 0.15);
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --border: rgba(0, 0, 0, 0.08);
+  --danger: #EF4444;
   --font-sans: 'Outfit', sans-serif;
   --font-mono: 'Space Mono', monospace;
 }
@@ -100,8 +100,8 @@ a {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background-color: var(--surface);
-  border-color: var(--text-muted);
+  background-color: var(--surface-light);
+  border-color: var(--border);
 }
 
 .btn-danger {
@@ -156,7 +156,7 @@ a {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.06);
 }
 
 /* Badge */
@@ -230,7 +230,7 @@ a {
 
 /* Skeleton loader */
 .skeleton {
-  background: linear-gradient(90deg, var(--surface-light) 25%, rgba(255,255,255,0.05) 50%, var(--surface-light) 75%);
+  background: linear-gradient(90deg, var(--surface-light) 25%, rgba(255,255,255,0.7) 50%, var(--surface-light) 75%);
   background-size: 200% 100%;
   animation: pulse 1.5s ease-in-out infinite, shimmer 2s infinite linear;
   border-radius: 8px;

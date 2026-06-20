@@ -45,7 +45,7 @@ export default function DailyNotesClient({ initialJournals, initialTrades }: { i
   };
 
   const dayTrades = useMemo(() => {
-    return initialTrades.filter(t => t.entryDate.startsWith(selectedDate));
+    return initialTrades.filter(t => new Date(t.entryDate).toISOString().startsWith(selectedDate));
   }, [initialTrades, selectedDate]);
 
   const dayPnl = dayTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
