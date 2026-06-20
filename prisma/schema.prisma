@@ -23,8 +23,9 @@ model User {
   setupTags       String?    // Stored as JSON string array
   mistakeTags     String?    // Stored as JSON string array
   createdAt       DateTime   @default(now())
-  trades       Trade[]
-  playbooks    Playbook[]
+  accounts        TradingAccount[]
+  trades          Trade[]
+  playbooks       Playbook[]
   dailyJournals DailyJournal[]
 }
 
@@ -41,6 +42,19 @@ model Playbook {
   tags          String?
   createdAt     DateTime @default(now())
   trades        Trade[]
+}
+
+model TradingAccount {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      String   @default("Live Personal") // Live Personal, Demo/Paper, Prop Firm Challenge, Prop Firm Funded
+  balance   Float    @default(0)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trades    Trade[]
 }
 
 model Trade {
@@ -63,6 +77,8 @@ model Trade {
   setupTag     String?
   playbookId   String?
   playbook     Playbook? @relation(fields: [playbookId], references: [id])
+  accountId    String?
+  account      TradingAccount? @relation(fields: [accountId], references: [id])
   mistakeTags  String?  // comma separated string
   notes        String?
   createdAt    DateTime @default(now())

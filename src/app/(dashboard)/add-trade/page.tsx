@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function AddTradePage() {
   const [playbooks, setPlaybooks] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [setupTagsList, setSetupTagsList] = useState<string[]>(['Breakout', 'Pullback', 'Reversal']);
   const [mistakeTagsList, setMistakeTagsList] = useState<string[]>(['FOMO', 'Revenge Trading', 'Chasing', 'Hesitation']);
   const [defaultAsset, setDefaultAsset] = useState('Stocks');
@@ -12,6 +13,18 @@ export default function AddTradePage() {
   useEffect(() => {
     fetch('/api/playbooks').then(r => r.json()).then(data => {
       if (Array.isArray(data)) setPlaybooks(data);
+    }).catch(() => {});
+
+    fetch('/api/accounts').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        setAccounts(data);
+        const defaultAcc = data.find(a => a.isDefault);
+        if (defaultAcc) {
+          setFormData(prev => ({ ...prev, accountId: defaultAcc.id }));
+        } else if (data.length > 0) {
+          setFormData(prev => ({ ...prev, accountId: data[0].id }));
+        }
+      }
     }).catch(() => {});
     
     fetch('/api/user/settings').then(r => r.json()).then(data => {
@@ -41,6 +54,7 @@ export default function AddTradePage() {
     status: 'Closed',
     setupTag: '',
     playbookId: '',
+    accountId: '',
     mistakeTags: '',
     notes: ''
   });
@@ -114,6 +128,14 @@ export default function AddTradePage() {
         <div className="card">
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">Trading Account</label>
+                <select name="accountId" className="form-select" value={formData.accountId} onChange={handleChange} required>
+                  <option value="" disabled>Select an account</option>
+                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+                </select>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Ticker / Symbol</label>
                 <input required type="text" name="ticker" className="form-input" value={formData.ticker} onChange={handleChange} placeholder="e.g. AAPL" />

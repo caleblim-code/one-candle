@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import LogoutButton from './LogoutButton';
 import SidebarNav from './SidebarNav';
 
@@ -24,7 +25,9 @@ export default async function DashboardLayout({
           </svg>
           OneCandle
         </div>
-        <SidebarNav />
+        <Suspense fallback={<div style={{ padding: '1.5rem 1rem' }}>Loading...</div>}>
+          <SidebarNav />
+        </Suspense>
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
           <LogoutButton />
         </div>

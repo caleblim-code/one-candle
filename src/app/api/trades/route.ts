@@ -7,31 +7,34 @@ export async function POST(req: Request) {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const data = await req.json()
-    if (!data.ticker || !data.assetClass || !data.direction || !data.entryPrice || !data.positionSize || !data.entryDate) {
+    const body = await req.json()
+    const { ticker, assetClass, direction, entryPrice, exitPrice, positionSize, entryDate, exitDate, stopLoss, takeProfit, fees, pnl, status, setupTag, playbookId, accountId, mistakeTags, notes } = body;
+
+    if (!ticker || !assetClass || !direction || !entryPrice || !positionSize || !entryDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const trade = await prisma.trade.create({
       data: {
         userId: session.id,
-        ticker: data.ticker,
-        assetClass: data.assetClass,
-        direction: data.direction,
-        entryPrice: parseFloat(data.entryPrice),
-        exitPrice: data.exitPrice ? parseFloat(data.exitPrice) : null,
-        positionSize: parseFloat(data.positionSize),
-        entryDate: new Date(data.entryDate),
-        exitDate: data.exitDate ? new Date(data.exitDate) : null,
-        stopLoss: data.stopLoss ? parseFloat(data.stopLoss) : null,
-        takeProfit: data.takeProfit ? parseFloat(data.takeProfit) : null,
-        fees: data.fees ? parseFloat(data.fees) : 0,
-        pnl: data.pnl !== null ? parseFloat(data.pnl) : null,
-        status: data.status || 'Open',
-        setupTag: data.setupTag || null,
-        playbookId: data.playbookId || null,
-        mistakeTags: data.mistakeTags || null,
-        notes: data.notes || null,
+        ticker: ticker.toUpperCase(),
+        assetClass,
+        direction,
+        entryPrice: parseFloat(entryPrice),
+        exitPrice: exitPrice ? parseFloat(exitPrice) : null,
+        positionSize: parseFloat(positionSize),
+        entryDate: new Date(entryDate),
+        exitDate: exitDate ? new Date(exitDate) : null,
+        stopLoss: stopLoss ? parseFloat(stopLoss) : null,
+        takeProfit: takeProfit ? parseFloat(takeProfit) : null,
+        fees: parseFloat(fees) || 0,
+        pnl: pnl !== null ? parseFloat(pnl) : null,
+        status: status || 'Open',
+        setupTag: setupTag || null,
+        playbookId: playbookId || null,
+        accountId: accountId || null,
+        mistakeTags: mistakeTags || null,
+        notes: notes || null,
       }
     })
 

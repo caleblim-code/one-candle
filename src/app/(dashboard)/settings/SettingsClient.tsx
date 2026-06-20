@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SettingsClient({ user }: { user: any }) {
@@ -15,6 +15,16 @@ export default function SettingsClient({ user }: { user: any }) {
     defaultAsset: user.defaultAsset || 'Stocks',
     startingBalance: user.startingBalance || 0,
   });
+
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [newAccount, setNewAccount] = useState({ name: '', type: 'Live Personal', balance: 0 });
+
+  // Fetch accounts on load
+  useEffect(() => {
+    fetch('/api/accounts').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setAccounts(data);
+    });
+  }, []);
 
   const [setupTags, setSetupTags] = useState<string[]>(user.setupTags ? JSON.parse(user.setupTags) : ['Breakout', 'Pullback', 'Reversal']);
   const [mistakeTags, setMistakeTags] = useState<string[]>(user.mistakeTags ? JSON.parse(user.mistakeTags) : ['FOMO', 'Revenge Trading', 'Chasing', 'Hesitation']);
@@ -107,6 +117,7 @@ export default function SettingsClient({ user }: { user: any }) {
 
       <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border)', marginBottom: '2rem', overflowX: 'auto' }}>
         <button onClick={() => setActiveTab('profile')} style={tabStyle('profile')}>Profile</button>
+        <button onClick={() => setActiveTab('accounts')} style={tabStyle('accounts')}>Portfolios</button>
         <button onClick={() => setActiveTab('preferences')} style={tabStyle('preferences')}>Trading Preferences</button>
         <button onClick={() => setActiveTab('tags')} style={tabStyle('tags')}>Tags Management</button>
         <button onClick={() => setActiveTab('security')} style={tabStyle('security')}>Account & Security</button>
@@ -139,6 +150,89 @@ export default function SettingsClient({ user }: { user: any }) {
               {loading ? 'Saving...' : 'Save Profile'}
             </button>
           </form>
+        </div>
+      )}
+
+      {activeTab === 'accounts' && (
+        <div className="animate-fade-in" style={{ display: 'grid', gap: '2rem' }}>
+          <div className="card">
+            <h3 style={{ marginBottom: '0.5rem' }}>Your Trading Portfolios</h3>
+            <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Create and manage multiple accounts. Your dashboard and journal can be filtered by these accounts.</p>
+            
+            {accounts.length > 0 ? (
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '0.75rem 0' }}>Account Name</th>
+                    <th style={{ padding: '0.75rem 0' }}>Type</th>
+                    <th style={{ padding: '0.75rem 0' }}>Starting Balance</th>
+                    <th style={{ padding: '0.75rem 0', textAlign: 'right' }}>Default</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map(acc => (
+                    <tr key={acc.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '1rem 0', fontWeight: 'bold' }}>{acc.name}</td>
+                      <td style={{ padding: '1rem 0' }}><span className="badge">{acc.type}</span></td>
+                      <td style={{ padding: '1rem 0' }} className="mono">${acc.balance.toFixed(2)}</td>
+                      <td style={{ padding: '1rem 0', textAlign: 'right' }}>
+                        {acc.isDefault ? (
+                          <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>✓</span>
+                        ) : (
+                          <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>Set Default</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--surface-light)', borderRadius: '8px', marginBottom: '2rem' }}>
+                <p className="text-muted">No accounts created yet.</p>
+              </div>
+            )}
+
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+              <h4 style={{ marginBottom: '1rem' }}>Add New Account</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Name (e.g. Apex 50k)</label>
+                  <input type="text" className="form-input" value={newAccount.name} onChange={e => setNewAccount({...newAccount, name: e.target.value})} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Type</label>
+                  <select className="form-select" value={newAccount.type} onChange={e => setNewAccount({...newAccount, type: e.target.value})}>
+                    <option>Live Personal</option>
+                    <option>Demo / Paper</option>
+                    <option>Prop Firm Challenge</option>
+                    <option>Prop Firm Funded</option>
+                    <option>IRA</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Starting Balance</label>
+                  <input type="number" className="form-input" value={newAccount.balance} onChange={e => setNewAccount({...newAccount, balance: parseFloat(e.target.value) || 0})} />
+                </div>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={async () => {
+                    if (!newAccount.name) return;
+                    setLoading(true);
+                    const res = await fetch('/api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAccount) });
+                    if (res.ok) {
+                      const acc = await res.json();
+                      setAccounts([...accounts, acc]);
+                      setNewAccount({ name: '', type: 'Live Personal', balance: 0 });
+                    }
+                    setLoading(false);
+                  }}
+                  disabled={loading || !newAccount.name}
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -3,12 +3,19 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import DashboardOverviewClient from './DashboardOverviewClient';
 
-export default async function DashboardOverview() {
+export default async function DashboardOverview({ searchParams }: { searchParams: Promise<{ account?: string }> }) {
+  const params = await searchParams;
+  const accountId = params.account;
   const session = await getSession();
   if (!session) redirect('/login');
 
+  const whereClause: any = { userId: session.id };
+  if (accountId && accountId !== 'all') {
+    whereClause.accountId = accountId;
+  }
+
   const trades = await prisma.trade.findMany({
-    where: { userId: session.id },
+    where: whereClause,
     orderBy: { entryDate: 'asc' } // chronological for charts
   });
 
