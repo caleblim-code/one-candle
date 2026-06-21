@@ -3,20 +3,30 @@
 import { useState, useMemo } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-export default function AnalyticsClient({ initialTrades, initialJournals = [] }: { initialTrades: any[], initialJournals?: any[] }) {
+import useSWR from 'swr';
+import DashboardLoading from '../dashboard/loading';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+export default function AnalyticsClient({ accountId }: { accountId: string }) {
+  const { data, error, isLoading } = useSWR(`/api/analytics/data?account=${accountId}`, fetcher);
+
   const [filterDate, setFilterDate] = useState('All');
   const [filterAsset, setFilterAsset] = useState('All');
   const [filterSetup, setFilterSetup] = useState('All');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  const initialTrades = data?.trades || [];
+  const initialJournals = data?.journals || [];
+
   // Extract unique filter options
-  const assetClasses = Array.from(new Set(initialTrades.map(t => t.assetClass))).filter(Boolean);
-  const setupTags = Array.from(new Set(initialTrades.map(t => t.setupTag))).filter(Boolean);
+  const assetClasses = Array.from(new Set(initialTrades.map((t: any) => t.assetClass))).filter(Boolean);
+  const setupTags = Array.from(new Set(initialTrades.map((t: any) => t.setupTag))).filter(Boolean);
 
   // 1. Filtered Trades (sorted chronologically)
   const trades = useMemo(() => {
     return initialTrades
-      .filter(t => {
+      .filter((t: any) => {
         if (filterAsset !== 'All' && t.assetClass !== filterAsset) return false;
         if (filterSetup !== 'All' && t.setupTag !== filterSetup) return false;
         if (filterDate !== 'All') {
@@ -31,7 +41,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
         }
         return true;
       })
-      .sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime());
+      .sort((a: any, b: any) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime());
   }, [initialTrades, filterAsset, filterSetup, filterDate]);
 
   // 2. Top-Level Stats
@@ -45,7 +55,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
     let totalR = 0;
     let rCount = 0;
 
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       const pnl = t.pnl || 0;
       if (pnl > 0) {
         grossProfit += pnl;
@@ -81,7 +91,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
   // 3. Chart Data Preparations
   const equityData = useMemo(() => {
     let cumulative = 0;
-    return trades.map((t, i) => {
+    return trades.map((t: any, i: number) => {
       cumulative += (t.pnl || 0);
       return {
         name: `Trade ${i + 1}`,
@@ -93,7 +103,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
 
   const pnlByPeriodData = useMemo(() => {
     const map = new Map<string, number>();
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       const d = new Date(t.entryDate).toLocaleDateString();
       map.set(d, (map.get(d) || 0) + (t.pnl || 0));
     });
@@ -102,7 +112,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
 
   const winRateBySetupData = useMemo(() => {
     const map = new Map<string, { wins: number; total: number }>();
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       const tag = t.setupTag || 'None';
       const stat = map.get(tag) || { wins: 0, total: 0 };
       stat.total++;
@@ -118,7 +128,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
 
   const pnlByDowData = useMemo(() => {
     const map = new Map<number, number>();
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       const day = new Date(t.entryDate).getDay();
       map.set(day, (map.get(day) || 0) + (t.pnl || 0));
     });
@@ -128,7 +138,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
 
   const pnlByTodData = useMemo(() => {
     const map = new Map<number, number>();
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       const hour = new Date(t.entryDate).getHours();
       map.set(hour, (map.get(hour) || 0) + (t.pnl || 0));
     });
@@ -137,7 +147,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
 
   const mistakeData = useMemo(() => {
     const map = new Map<string, { count: number, pnlImpact: number }>();
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       if (t.mistakeTags) {
         t.mistakeTags.split(',').forEach((tag: string) => {
           const tName = tag.trim();
@@ -157,13 +167,13 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
     
     // Create a map of date string -> mental states
     const journalMap = new Map<string, string[]>();
-    initialJournals.forEach(j => {
+    initialJournals.forEach((j: any) => {
       if (j.mentalState) {
         journalMap.set(j.date, j.mentalState.split(',').map((s: string) => s.trim()).filter(Boolean));
       }
     });
 
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       const dString = new Date(t.entryDate).toISOString().split('T')[0];
       const states = journalMap.get(dString) || ['Untagged'];
       
@@ -181,7 +191,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
   // Calendar grouping
   const calendarData = useMemo(() => {
     const map = new Map<string, { pnl: number, trades: any[] }>();
-    trades.forEach(t => {
+    trades.forEach((t: any) => {
       const dString = new Date(t.entryDate).toISOString().split('T')[0];
       const existing = map.get(dString) || { pnl: 0, trades: [] };
       existing.pnl += (t.pnl || 0);
@@ -224,11 +234,19 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
     return null;
   };
 
+  if (error) return <div className="text-danger" style={{ padding: '2rem' }}>Failed to load analytics data.</div>;
+  if (isLoading) return <DashboardLoading />;
+  if (!data || !data.success) return <DashboardLoading />;
+
   if (initialTrades.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <h2 style={{ marginBottom: '1rem' }}>No Data Yet</h2>
-        <p className="text-muted">Log some closed trades to generate your analytics engine.</p>
+      <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', border: '1px solid var(--border)' }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        </div>
+        <h2>Not Enough Data Yet</h2>
+        <p className="text-muted" style={{ marginTop: '0.5rem', marginBottom: '2rem', maxWidth: '400px' }}>Your analytics engine needs data to run. Log your trades to unlock deep insights, profitability heatmaps, and performance breakdowns.</p>
+        <a href="/add-trade" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}>Log a Trade</a>
       </div>
     );
   }
@@ -515,7 +533,7 @@ export default function AnalyticsClient({ initialTrades, initialJournals = [] }:
               <button className="btn btn-ghost" onClick={() => setSelectedDate(null)}>Close</button>
             </div>
             
-            {calendarData.get(selectedDate)?.trades.map(t => (
+            {calendarData.get(selectedDate)?.trades.map((t: any) => (
               <div key={t.id} className="card" style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--surface-light)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <span className="mono fw-bold">{t.ticker.toUpperCase()}</span>

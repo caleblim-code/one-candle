@@ -1,23 +1,37 @@
 "use client";
 
+import useSWR from 'swr';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
+import DashboardLoading from './loading';
 
-export default function DashboardOverviewClient({ stats, chartData, recentTrades }: { stats: any, chartData: any[], recentTrades: any[] }) {
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+export default function DashboardOverviewClient({ accountId }: { accountId: string }) {
+  const { data, error, isLoading } = useSWR(`/api/dashboard/stats?account=${accountId}`, fetcher);
+
+  if (error) return <div className="text-danger" style={{ padding: '2rem' }}>Failed to load dashboard data.</div>;
+  if (isLoading) return <DashboardLoading />;
+  
+  if (!data || !data.success) return <DashboardLoading />;
+
+  const { stats, chartData, recentTrades } = data;
 
   if (stats.totalTrades === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🚀</div>
-        <h2 style={{ marginBottom: '1rem' }}>Welcome to OneCandle</h2>
-        <p className="text-muted" style={{ marginBottom: '2rem' }}>You have a clean slate. Let's get your first trade into the journal.</p>
-        <Link href="/add-trade" className="btn btn-primary">Add Your First Trade</Link>
+      <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', border: '1px solid var(--border)' }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        </div>
+        <h2>Welcome to OneCandle</h2>
+        <p className="text-muted" style={{ marginTop: '0.5rem', marginBottom: '2rem', maxWidth: '400px' }}>Your dashboard is currently empty. Start by logging your first trade to see your performance metrics and equity curve come to life.</p>
+        <Link href="/add-trade" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}>Add Your First Trade</Link>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <h2 style={{ marginBottom: '2rem' }}>Dashboard Overview</h2>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -84,7 +98,7 @@ export default function DashboardOverviewClient({ stats, chartData, recentTrades
             </tr>
           </thead>
           <tbody>
-            {recentTrades.map(t => (
+            {recentTrades.map((t: any) => (
               <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '1rem 0' }} className="mono fw-bold">{t.ticker.toUpperCase()}</td>
                 <td style={{ padding: '1rem 0' }}>

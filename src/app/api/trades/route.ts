@@ -51,14 +51,28 @@ export async function GET(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const url = new URL(req.url)
-    // Optional filtering here if needed, or fetch all and filter on frontend for Phase 1.
+    const accountId = url.searchParams.get('account')
+    const page = parseInt(url.searchParams.get('page') || '1', 10)
+    const limit = parseInt(url.searchParams.get('limit') || '50', 10)
+    const skip = (page - 1) * limit
     
-    const trades = await prisma.trade.findMany({
-      where: { userId: session.id },
-      orderBy: { entryDate: 'desc' }
-    })
+    const whereClause: any = { userId: session.id }
+    if (accountId && accountId !== 'all') {
+      whereClause.accountId = accountId
+    }
 
-    return NextResponse.json({ success: true, trades })
+    const [trades, total] = await Promise.all([
+      prisma.trade.findMany({
+        where: whereClause,
+        orderBy: { entryDate: 'desc' },
+        include: { playbook: { select: { id: true, name: true } } },
+        skip,
+        take: limit
+      }),
+      prisma.trade.count({ where: whereClause })
+    ])
+
+    return NextResponse.json({ success: true, trades, total, page, limit, totalPages: Math.ceil(total / limit) })
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

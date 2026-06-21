@@ -2,9 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
+import DashboardLoading from '../dashboard/loading';
 
-export default function JournalClient({ initialTrades }: { initialTrades: any[] }) {
-  const [trades, setTrades] = useState(initialTrades);
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+export default function JournalClient({ accountId }: { accountId: string }) {
+  const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAsset, setFilterAsset] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
@@ -13,7 +17,18 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tradeToDelete, setTradeToDelete] = useState<string | null>(null);
 
-  const filteredTrades = trades.filter(t => {
+  const { data, error, isLoading, mutate } = useSWR(`/api/trades?account=${accountId}&page=${page}&limit=50`, fetcher);
+
+  if (error) return <div className="text-danger" style={{ padding: '2rem' }}>Failed to load journal.</div>;
+  if (isLoading) return <DashboardLoading />;
+  
+  if (!data || !data.success) return <DashboardLoading />;
+
+  const serverTrades = data.trades || [];
+  const totalPages = data.totalPages || 1;
+
+  // Client side filters (filtering current page only for now, sufficient for phase 1)
+  const filteredTrades = serverTrades.filter((t: any) => {
     const matchesSearch = t.ticker.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAsset = filterAsset === 'All' || t.assetClass === filterAsset;
     const matchesStatus = filterStatus === 'All' || t.status === filterStatus;
@@ -28,9 +43,6 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
   const handleDelete = async () => {
     if (!tradeToDelete) return;
     
-    // Optimistic UI update
-    const previousTrades = [...trades];
-    setTrades(trades.filter(t => t.id !== tradeToDelete));
     setDeleteModalOpen(false);
     
     try {
@@ -38,15 +50,15 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
       if (!res.ok) {
         throw new Error('Failed to delete');
       }
+      mutate(); // re-fetch after delete
     } catch (err) {
-      alert('Failed to delete trade. Reverting...');
-      setTrades(previousTrades); // Revert on failure
+      alert('Failed to delete trade.');
     } finally {
       setTradeToDelete(null);
     }
   };
 
-  if (trades.length === 0) {
+  if (serverTrades.length === 0 && page === 1) {
     return (
       <div style={{ textAlign: 'center', padding: '4rem 0' }}>
         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📉</div>
@@ -58,7 +70,7 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
   }
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2>Journal</h2>
         <Link href="/add-trade" className="btn btn-primary">Add Trade</Link>
@@ -105,7 +117,7 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
             </tr>
           </thead>
           <tbody>
-            {filteredTrades.map(trade => (
+            {filteredTrades.map((trade: any) => (
               <React.Fragment key={trade.id}>
                 <tr 
                   onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}
@@ -155,7 +167,6 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
                             {trade.notes || 'No notes provided.'}
                           </p>
                           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                            <button className="btn btn-ghost" onClick={() => alert('Edit feature coming soon')} style={{ padding: '0.5rem 1rem' }}>Edit</button>
                             <button className="btn btn-danger" onClick={() => confirmDelete(trade.id)} style={{ padding: '0.5rem 1rem' }}>Delete</button>
                           </div>
                         </div>
@@ -168,6 +179,32 @@ export default function JournalClient({ initialTrades }: { initialTrades: any[] 
             ))}
           </tbody>
         </table>
+        
+        {/* Pagination Controls */}
+        <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="text-muted" style={{ fontSize: '0.9rem' }}>
+            Showing page {page} of {totalPages} ({data.total} total trades)
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+              className="btn btn-ghost" 
+              style={{ padding: '0.5rem 1rem' }} 
+              disabled={page === 1} 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              Previous
+            </button>
+            <button 
+              className="btn btn-ghost" 
+              style={{ padding: '0.5rem 1rem' }} 
+              disabled={page >= totalPages} 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {deleteModalOpen && (
