@@ -7,8 +7,10 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
+  const [rawText, setRawText] = useState('');
 
   const parseText = (text: string) => {
+    setRawText(text); // Store raw text for debugging
     const data: any = { status: 'Closed' };
     
     // 1. Ticker, Direction, Size, Broker ID
@@ -26,30 +28,31 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
     }
 
     // 2. Prices
-    // We look for two numbers (with or without decimals, dot or comma) separated by arrow-like chars
-    const priceMatch = text.match(/([0-9]+[.,]?[0-9]{0,5})\s*[-=~_>]{1,3}\s*([0-9]+[.,]?[0-9]{0,5})/);
+    // Extremely forgiving: looking for two decimals separated by any combination of spaces/dashes/arrows
+    const priceMatch = text.match(/([0-9]{2,}[.,][0-9]+)[\s\-=>~_—]+([0-9]{2,}[.,][0-9]+)/);
     if (priceMatch) {
       data.entryPrice = priceMatch[1].replace(',', '.');
       data.exitPrice = priceMatch[2].replace(',', '.');
     }
 
     // 3. Dates
-    // Example: "2026.06.21 09:49:33 -> 2026.06.21 10:28:16"
-    const dateMatch = text.match(/(\d{4}[.,\/-]\d{2}[.,\/-]\d{2}\s+\d{2}:\d{2}:\d{2})\s*[-=~_>]{1,3}\s*(\d{4}[.,\/-]\d{2}[.,\/-]\d{2}\s+\d{2}:\d{2}:\d{2})/);
-    if (dateMatch) {
+    // We just find ALL dates in the format YYYY.MM.DD HH:mm:ss anywhere in the text
+    const dateRegex = /\b(\d{4}[.,\/-]\d{2}[.,\/-]\d{2}\s+\d{2}:\d{2}:\d{2})\b/g;
+    const dates = [...text.matchAll(dateRegex)];
+    if (dates.length >= 2) {
       const formatToLocal = (mt5date: string) => {
         const [date, time] = mt5date.split(' ');
         return `${date.replace(/[.,\/]/g, '-')}T${time.slice(0,5)}`;
       };
-      data.entryDate = formatToLocal(dateMatch[1]);
-      data.exitDate = formatToLocal(dateMatch[2]);
+      data.entryDate = formatToLocal(dates[0][1]);
+      data.exitDate = formatToLocal(dates[1][1]);
     }
 
-    // 4. S/L and T/P
-    const slMatch = text.match(/S\/?L[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
+    // 4. S/L and T/P (handling OCR mistaking S/L for S|L, SIL, S1L, TIP, T|P, T1P)
+    const slMatch = text.match(/S[/\|I1\\]?L[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
     if (slMatch && slMatch[1] !== '0.00' && slMatch[1] !== '0') data.stopLoss = slMatch[1].replace(',', '.');
 
-    const tpMatch = text.match(/T\/?P[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
+    const tpMatch = text.match(/T[/\|I1\\]?P[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
     if (tpMatch && tpMatch[1] !== '0.00' && tpMatch[1] !== '0') data.takeProfit = tpMatch[1].replace(',', '.');
 
     // 5. Swap & Charges -> Fees
@@ -133,6 +136,15 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
           </>
         )}
       </div>
+
+      {rawText && (
+        <div style={{ marginTop: '2rem' }}>
+          <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Raw OCR Output (Debug)</h4>
+          <pre style={{ backgroundColor: '#000', padding: '1rem', borderRadius: '8px', fontSize: '12px', color: '#0f0', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
+            {rawText}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
