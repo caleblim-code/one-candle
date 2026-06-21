@@ -17,7 +17,7 @@
 }
 
 .navScrolled {
-    background-color: rgba(6, 10, 17, 0.85);
+    background-color: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(16px);
     border-bottom-color: var(--border);
     padding: 1rem 0;
@@ -415,8 +415,8 @@
 .featureCard:hover {
     transform: translateY(-5px);
     border-color: rgba(0, 224, 84, 0.3);
-    background-color: #111827;
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    background-color: rgba(0, 224, 84, 0.05);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
 }
 
 .fIcon {
@@ -439,11 +439,11 @@
 .analyticsPreview { padding: 6rem 0; }
 
 .liveDash {
-    background-color: #0A0F18;
+    background-color: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.6);
+    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.1);
 }
 
 .ldHeader {
@@ -640,7 +640,7 @@
 .priceCardPopular {
     border-color: var(--accent);
     box-shadow: 0 0 30px rgba(0, 224, 84, 0.1);
-    background-color: #111827;
+    background-color: var(--surface-light);
 }
 
 .popularBadge {
@@ -710,7 +710,7 @@
     text-align: center;
     position: relative;
     overflow: hidden;
-    background-color: #0A0F18;
+    background-color: var(--surface);
     border-top: 1px solid var(--border);
 }
 
