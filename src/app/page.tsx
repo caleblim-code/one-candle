@@ -150,7 +150,10 @@ export default function LandingPage() {
             <a href="#analytics">Analytics</a>
             <a href="#pricing">Pricing</a>
           </div>
-          <Link href="/signup" className="btn btn-primary">Start Free Trial</Link>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <Link href="/login" style={{ fontWeight: '500', color: 'var(--text-main)' }}>Log In</Link>
+            <Link href="/signup" className="btn btn-primary">Start Free Trial</Link>
+          </div>
         </div>
       </nav>
 

@@ -21,7 +21,19 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await prisma.user.create({
-      data: { name, email, passwordHash }
+      data: { 
+        name, 
+        email, 
+        passwordHash,
+        accounts: {
+          create: {
+            name: 'Main Portfolio',
+            type: 'Live Personal',
+            balance: 0,
+            isDefault: true
+          }
+        }
+      }
     })
 
     const session = await encrypt({ id: user.id, name: user.name, email: user.email })
