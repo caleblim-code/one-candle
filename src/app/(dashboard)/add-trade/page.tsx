@@ -58,7 +58,8 @@ export default function AddTradePage() {
     playbookId: '',
     accountId: '',
     mistakeTags: '',
-    notes: ''
+    notes: '',
+    brokerTradeId: ''
   });
   
   const [images, setImages] = useState<File[]>([]);
@@ -195,6 +196,10 @@ export default function AddTradePage() {
                 <input required type="text" name="ticker" className="form-input" value={formData.ticker} onChange={handleChange} placeholder="e.g. AAPL" />
               </div>
               <div className="form-group">
+                <label className="form-label">Broker Trade ID (Optional)</label>
+                <input type="text" name="brokerTradeId" className="form-input" value={formData.brokerTradeId} onChange={handleChange} placeholder="e.g. #352254083" />
+              </div>
+              <div className="form-group">
                 <label className="form-label">Asset Class</label>
                 <select name="assetClass" className="form-select" value={formData.assetClass} onChange={handleChange}>
                   <option>Stocks</option>
@@ -245,7 +250,7 @@ export default function AddTradePage() {
                 <input required type="number" step="any" name="positionSize" className="form-input mono" style={!formData.positionSize ? { borderColor: 'var(--danger)' } : {}} value={formData.positionSize} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label className="form-label">Fees / Commissions</label>
+                <label className="form-label">Fees / Swap</label>
                 <input type="number" step="any" name="fees" className="form-input mono" value={formData.fees} onChange={handleChange} />
               </div>
               

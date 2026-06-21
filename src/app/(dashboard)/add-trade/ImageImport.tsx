@@ -9,50 +9,60 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
   const [error, setError] = useState('');
 
   const parseText = (text: string) => {
-    const data: any = {};
+    const data: any = { status: 'Closed' };
     
-    // 1. Ticker, Direction, Size
-    // Example: "BTCUSD buy 0.1" or "EURUSD sell 1.00"
-    const headMatch = text.match(/([A-Z0-9]+)\s+(buy|sell)\s+([0-9.]+)/i);
+    // 1. Ticker, Direction, Size, Broker ID
+    // Example: "BTCUSD buy 0.1 #352254083"
+    const headMatch = text.match(/([A-Z0-9]+)\s+(buy|sell)\s+([0-9.]+)(?:\s+#?(\d+))?/i);
     if (headMatch) {
       data.ticker = headMatch[1];
       data.direction = headMatch[2].toLowerCase() === 'sell' ? 'Short' : 'Long';
       data.positionSize = headMatch[3];
+      if (headMatch[4]) data.brokerTradeId = `#${headMatch[4]}`;
       
-      // Attempt to guess asset class
       if (['BTC', 'ETH', 'SOL', 'USDT'].some(c => data.ticker.includes(c))) data.assetClass = 'Crypto';
-      else if (data.ticker.length === 6 && !data.ticker.includes('US30')) data.assetClass = 'Forex';
+      else if (data.ticker.length >= 6 && !data.ticker.includes('US30') && !data.ticker.includes('NAS')) data.assetClass = 'Forex';
       else data.assetClass = 'Stocks';
     }
 
     // 2. Prices
-    // Example: "64308.08 -> 64185.00"
-    const priceMatch = text.match(/([0-9.]+)\s*[-=>]+\s*([0-9.]+)/);
+    // We look for two decimal numbers separated by arrow-like chars
+    const priceMatch = text.match(/([0-9]+\.[0-9]{2,5})\s*[-=~_>]{1,3}\s*([0-9]+\.[0-9]{2,5})/);
     if (priceMatch) {
       data.entryPrice = priceMatch[1];
       data.exitPrice = priceMatch[2];
-      data.status = 'Closed';
     }
 
     // 3. Dates
     // Example: "2026.06.21 09:49:33 -> 2026.06.21 10:28:16"
-    const dateMatch = text.match(/(\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2}:\d{2})\s*[-=>]+\s*(\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2}:\d{2})/);
+    const dateMatch = text.match(/(\d{4}[\.\/-]\d{2}[\.\/-]\d{2}\s+\d{2}:\d{2}:\d{2})\s*[-=~_>]{1,3}\s*(\d{4}[\.\/-]\d{2}[\.\/-]\d{2}\s+\d{2}:\d{2}:\d{2})/);
     if (dateMatch) {
-      // Convert "2026.06.21 09:49:33" to "2026-06-21T09:49" for input type="datetime-local"
       const formatToLocal = (mt5date: string) => {
         const [date, time] = mt5date.split(' ');
-        return `${date.replace(/\./g, '-')}T${time.slice(0,5)}`;
+        return `${date.replace(/[\.\/]/g, '-')}T${time.slice(0,5)}`;
       };
       data.entryDate = formatToLocal(dateMatch[1]);
       data.exitDate = formatToLocal(dateMatch[2]);
     }
 
     // 4. S/L and T/P
-    const slMatch = text.match(/S\/L:\s*([0-9.]+)/i);
-    if (slMatch) data.stopLoss = slMatch[1];
+    const slMatch = text.match(/S\/?L[:;]?\s*([0-9.]+)/i);
+    if (slMatch && slMatch[1] !== '0.00' && slMatch[1] !== '0') data.stopLoss = slMatch[1];
 
-    const tpMatch = text.match(/T\/P:\s*([0-9.]+)/i);
-    if (tpMatch) data.takeProfit = tpMatch[1];
+    const tpMatch = text.match(/T\/?P[:;]?\s*([0-9.]+)/i);
+    if (tpMatch && tpMatch[1] !== '0.00' && tpMatch[1] !== '0') data.takeProfit = tpMatch[1];
+
+    // 5. Swap & Charges -> Fees
+    let totalFees = 0;
+    const swapMatch = text.match(/Swap[:;]?\s*(-?[0-9.]+)/i);
+    if (swapMatch && !isNaN(parseFloat(swapMatch[1]))) totalFees += Math.abs(parseFloat(swapMatch[1]));
+    
+    const chargeMatch = text.match(/Charges[:;]?\s*(-?[0-9.]+)/i);
+    if (chargeMatch && !isNaN(parseFloat(chargeMatch[1]))) totalFees += Math.abs(parseFloat(chargeMatch[1]));
+    
+    if (totalFees > 0) {
+      data.fees = totalFees.toFixed(2);
+    }
 
     // If we didn't find the bare minimum, throw an error
     if (!data.ticker && !data.entryPrice) {

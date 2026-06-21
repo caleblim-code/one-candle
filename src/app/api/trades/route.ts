@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const { ticker, assetClass, direction, entryPrice, exitPrice, positionSize, entryDate, exitDate, stopLoss, takeProfit, fees, pnl, status, setupTag, playbookId, accountId, mistakeTags, notes } = body;
+    const { ticker, assetClass, direction, entryPrice, exitPrice, positionSize, entryDate, exitDate, stopLoss, takeProfit, fees, pnl, status, setupTag, playbookId, accountId, mistakeTags, notes, brokerTradeId } = body;
 
     if (!ticker || !assetClass || !direction || !entryPrice || !positionSize || !entryDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         accountId: accountId || null,
         mistakeTags: mistakeTags || null,
         notes: notes || null,
+        brokerTradeId: brokerTradeId || null,
       }
     })
 

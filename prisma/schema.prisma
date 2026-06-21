@@ -83,6 +83,7 @@ model Trade {
   account      TradingAccount? @relation(fields: [accountId], references: [id])
   mistakeTags  String?  // comma separated string
   notes        String?
+  brokerTradeId String?
   createdAt    DateTime @default(now())
   images       TradeImage[]
 
