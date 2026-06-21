@@ -48,11 +48,11 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
       data.exitDate = formatToLocal(dates[1][1]);
     }
 
-    // 4. S/L and T/P (handling OCR mistaking S/L for S|L, SIL, S1L, TIP, T|P, T1P)
-    const slMatch = text.match(/S[/\|I1\\]?L[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
+    // 4. S/L and T/P (handling OCR mistaking S/L for S|L, SIL, S1L, TIP, T|P, T1P, i/R)
+    const slMatch = text.match(/S[/\|I1\\]?L[:;.]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
     if (slMatch && slMatch[1] !== '0.00' && slMatch[1] !== '0') data.stopLoss = slMatch[1].replace(',', '.');
 
-    const tpMatch = text.match(/T[/\|I1\\]?P[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
+    const tpMatch = text.match(/[Ti]\s*[/\|I1\\]?\s*[PR][:;.]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
     if (tpMatch && tpMatch[1] !== '0.00' && tpMatch[1] !== '0') data.takeProfit = tpMatch[1].replace(',', '.');
 
     // 5. Swap & Charges -> Fees
