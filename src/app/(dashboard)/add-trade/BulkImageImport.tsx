@@ -155,7 +155,7 @@ export default function BulkImageImport({ accounts, playbooks = [] }: { accounts
         parsed.mistakeTags = '';
         parsed.notes = '';
         
-        results.push({ ...parsed, _originalIndex: i, _file: files[i] });
+        results.push({ ...parsed, _isValid: parsed._isValid, _errors: parsed._errors });
       }
       
       await worker.terminate();
@@ -198,13 +198,10 @@ export default function BulkImageImport({ accounts, playbooks = [] }: { accounts
         
         const row = tradesToImport[i];
         const copy = { ...row, accountId };
-        const file = copy._file;
         
         // Clean up internal state before sending
-        delete copy._originalIndex;
         delete copy._isValid;
         delete copy._errors;
-        delete copy._file;
 
         // 1. Create Trade
         const res = await fetch('/api/trades', {
@@ -219,24 +216,11 @@ export default function BulkImageImport({ accounts, playbooks = [] }: { accounts
         }
         
         const createdTrade = await res.json();
-
-        // 2. Upload Screenshot if available
-        if (file && createdTrade.id) {
-          const formData = new FormData();
-          formData.append('file', file);
-          const imgRes = await fetch(`/api/trades/${createdTrade.id}/images`, {
-            method: 'POST',
-            body: formData,
-          });
-          if (!imgRes.ok) {
-            console.warn('Failed to upload image for trade', createdTrade.id);
-          }
-        }
         
         successCount++;
       }
 
-      alert(`Success! ${successCount} trades imported and screenshots attached.`);
+      alert(`Success! ${successCount} trades imported.`);
       router.push('/journal');
       
     } catch (err: any) {
@@ -304,7 +288,7 @@ export default function BulkImageImport({ accounts, playbooks = [] }: { accounts
       {step === 2 && (
         <div className="animate-slide-up">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
-            <p className="text-muted" style={{ margin: 0 }}>Review parsed trades, correct any misreads, and add your playbook & notes before importing. Screenshots will automatically be attached!</p>
+            <p className="text-muted" style={{ margin: 0 }}>Review parsed trades, correct any misreads, and add your playbook & notes before importing.</p>
             <div className="mono" style={{ fontSize: '0.9rem', backgroundColor: 'var(--surface-light)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
               <span className="text-accent">{Array.from(selectedRows).filter(i => parsedRows[i]._isValid).length}</span> valid trades selected
             </div>
