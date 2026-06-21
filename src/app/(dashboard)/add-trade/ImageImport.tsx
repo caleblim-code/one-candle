@@ -91,6 +91,29 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
               // If the trade should be a loss but PNL is positive, flip the sign
               // (OCR likely misread the minus sign as a digit like "2")
               if (!shouldBeProfit && pnlVal > 0) {
+                const pnlStr = pnlMatch[1];
+                if (pnlStr.startsWith('2') || pnlStr.startsWith('7')) {
+                  const withoutFirstDigit = parseFloat(pnlStr.substring(1).replace(',', '.'));
+                  const rawDiff = Math.abs(entry - exit) * parseFloat(data.positionSize || '1');
+                  
+                  if (rawDiff > 0 && withoutFirstDigit > 0) {
+                    const multOriginal = pnlVal / rawDiff;
+                    const multStripped = withoutFirstDigit / rawDiff;
+                    
+                    const isPowerOf10 = (n: number) => {
+                      if (n <= 0) return false;
+                      const log = Math.log10(n);
+                      return Math.abs(log - Math.round(log)) < 0.2;
+                    };
+                    
+                    if (isPowerOf10(multStripped) && !isPowerOf10(multOriginal)) {
+                      pnlVal = withoutFirstDigit;
+                    }
+                  } else if (withoutFirstDigit > 0) {
+                     // Fallback if rawDiff is 0
+                     pnlVal = withoutFirstDigit;
+                  }
+                }
                 pnlVal = -Math.abs(pnlVal);
               }
               // If the trade should be a profit but PNL is negative, make it positive
