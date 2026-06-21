@@ -26,31 +26,31 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
     }
 
     // 2. Prices
-    // We look for two decimal numbers separated by arrow-like chars
-    const priceMatch = text.match(/([0-9]+\.[0-9]{2,5})\s*[-=~_>]{1,3}\s*([0-9]+\.[0-9]{2,5})/);
+    // We look for two numbers (with or without decimals, dot or comma) separated by arrow-like chars
+    const priceMatch = text.match(/([0-9]+[.,]?[0-9]{0,5})\s*[-=~_>]{1,3}\s*([0-9]+[.,]?[0-9]{0,5})/);
     if (priceMatch) {
-      data.entryPrice = priceMatch[1];
-      data.exitPrice = priceMatch[2];
+      data.entryPrice = priceMatch[1].replace(',', '.');
+      data.exitPrice = priceMatch[2].replace(',', '.');
     }
 
     // 3. Dates
     // Example: "2026.06.21 09:49:33 -> 2026.06.21 10:28:16"
-    const dateMatch = text.match(/(\d{4}[\.\/-]\d{2}[\.\/-]\d{2}\s+\d{2}:\d{2}:\d{2})\s*[-=~_>]{1,3}\s*(\d{4}[\.\/-]\d{2}[\.\/-]\d{2}\s+\d{2}:\d{2}:\d{2})/);
+    const dateMatch = text.match(/(\d{4}[.,\/-]\d{2}[.,\/-]\d{2}\s+\d{2}:\d{2}:\d{2})\s*[-=~_>]{1,3}\s*(\d{4}[.,\/-]\d{2}[.,\/-]\d{2}\s+\d{2}:\d{2}:\d{2})/);
     if (dateMatch) {
       const formatToLocal = (mt5date: string) => {
         const [date, time] = mt5date.split(' ');
-        return `${date.replace(/[\.\/]/g, '-')}T${time.slice(0,5)}`;
+        return `${date.replace(/[.,\/]/g, '-')}T${time.slice(0,5)}`;
       };
       data.entryDate = formatToLocal(dateMatch[1]);
       data.exitDate = formatToLocal(dateMatch[2]);
     }
 
     // 4. S/L and T/P
-    const slMatch = text.match(/S\/?L[:;]?\s*([0-9.]+)/i);
-    if (slMatch && slMatch[1] !== '0.00' && slMatch[1] !== '0') data.stopLoss = slMatch[1];
+    const slMatch = text.match(/S\/?L[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
+    if (slMatch && slMatch[1] !== '0.00' && slMatch[1] !== '0') data.stopLoss = slMatch[1].replace(',', '.');
 
-    const tpMatch = text.match(/T\/?P[:;]?\s*([0-9.]+)/i);
-    if (tpMatch && tpMatch[1] !== '0.00' && tpMatch[1] !== '0') data.takeProfit = tpMatch[1];
+    const tpMatch = text.match(/T\/?P[:;]?\s*([0-9]+[.,]?[0-9]{0,5})/i);
+    if (tpMatch && tpMatch[1] !== '0.00' && tpMatch[1] !== '0') data.takeProfit = tpMatch[1].replace(',', '.');
 
     // 5. Swap & Charges -> Fees
     let totalFees = 0;

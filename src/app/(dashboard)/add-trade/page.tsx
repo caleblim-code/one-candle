@@ -71,9 +71,8 @@ export default function AddTradePage() {
   const handleOcrParsed = (data: any) => {
     setFormData(prev => ({
       ...prev,
-      ...data,
-      // Default to Closed if we successfully extracted exit price, otherwise keep Open
-      status: data.exitPrice ? 'Closed' : 'Open'
+      status: 'Closed',
+      ...data
     }));
     setMode('manual');
     setError(''); // clear errors if any
