@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import CsvImport from './CsvImport';
 
 export default function AddTradePage() {
   const [playbooks, setPlaybooks] = useState<any[]>([]);
@@ -62,6 +63,7 @@ export default function AddTradePage() {
   const [livePnl, setLivePnl] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mode, setMode] = useState<'manual' | 'import'>('manual');
 
   // Live P&L Calc
   useEffect(() => {
@@ -120,11 +122,30 @@ export default function AddTradePage() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: '2rem' }}>Add Trade</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2>Add Trade</h2>
+        <div style={{ display: 'flex', backgroundColor: 'var(--surface)', borderRadius: '8px', padding: '0.25rem', border: '1px solid var(--border)' }}>
+          <button 
+            onClick={() => setMode('manual')}
+            style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', backgroundColor: mode === 'manual' ? 'var(--surface-light)' : 'transparent', color: mode === 'manual' ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: mode === 'manual' ? 600 : 400, cursor: 'pointer', transition: 'all 150ms ease' }}
+          >
+            Manual Entry
+          </button>
+          <button 
+            onClick={() => setMode('import')}
+            style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', backgroundColor: mode === 'import' ? 'var(--surface-light)' : 'transparent', color: mode === 'import' ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: mode === 'import' ? 600 : 400, cursor: 'pointer', transition: 'all 150ms ease' }}
+          >
+            Import CSV
+          </button>
+        </div>
+      </div>
       
       {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
+      {mode === 'import' ? (
+        <CsvImport accounts={accounts} />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
         <div className="card">
           <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
           <form onSubmit={handleSubmit}>
@@ -306,7 +327,8 @@ export default function AddTradePage() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
