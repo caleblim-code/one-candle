@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import DashboardLoading from '../dashboard/loading';
+import TradeImages from './TradeImages';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -160,6 +161,8 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                               ))}
                             </div>
                           )}
+
+                          <TradeImages tradeId={trade.id} />
                         </div>
                         <div>
                           <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Notes</h4>

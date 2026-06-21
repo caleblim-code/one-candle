@@ -84,10 +84,22 @@ model Trade {
   mistakeTags  String?  // comma separated string
   notes        String?
   createdAt    DateTime @default(now())
+  images       TradeImage[]
 
   @@index([userId, accountId])
   @@index([userId, entryDate(sort: Desc)])
   @@index([accountId])
+}
+
+model TradeImage {
+  id        String   @id @default(uuid())
+  tradeId   String
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  filename  String   // filename on disk
+  label     String?  // "Entry Chart", "Exit Chart", "Setup Context"
+  createdAt DateTime @default(now())
+
+  @@index([tradeId])
 }
 
 model DailyJournal {

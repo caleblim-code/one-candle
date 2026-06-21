@@ -60,6 +60,7 @@ export default function AddTradePage() {
     notes: ''
   });
   
+  const [images, setImages] = useState<File[]>([]);
   const [livePnl, setLivePnl] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,7 +109,18 @@ export default function AddTradePage() {
       });
 
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.trade) {
+        // Upload images if any
+        if (images.length > 0) {
+          for (const file of images) {
+            const formData = new FormData();
+            formData.append('image', file);
+            await fetch(`/api/trades/${data.trade.id}/images`, {
+              method: 'POST',
+              body: formData
+            }).catch(() => {}); // silently fail individual image uploads for now
+          }
+        }
         router.push('/journal');
       } else {
         setError(data.error || 'Failed to add trade');
@@ -287,6 +299,26 @@ export default function AddTradePage() {
             <div className="form-group">
               <label className="form-label">Notes</label>
               <textarea name="notes" className="form-textarea" value={formData.notes} onChange={handleChange} placeholder="What was your reasoning? How did you feel?"></textarea>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Screenshots (Max 3)</label>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                {images.map((file, i) => (
+                  <div key={i} style={{ position: 'relative', width: '100px', height: '75px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <img src={URL.createObjectURL(file)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button type="button" onClick={() => setImages(images.filter((_, index) => index !== i))} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', lineHeight: 1 }}>×</button>
+                  </div>
+                ))}
+                {images.length < 3 && (
+                  <label style={{ width: '100px', height: '75px', borderRadius: '8px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <span className="text-muted" style={{ fontSize: '1.5rem', lineHeight: 1 }}>+</span>
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                      if (e.target.files?.[0]) setImages([...images, e.target.files[0]]);
+                    }} />
+                  </label>
+                )}
+              </div>
             </div>
 
             <div style={{ marginTop: '2rem' }}>
