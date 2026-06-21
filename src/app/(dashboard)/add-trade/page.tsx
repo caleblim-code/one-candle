@@ -126,6 +126,7 @@ export default function AddTradePage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
         <div className="card">
+          <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -274,6 +275,7 @@ export default function AddTradePage() {
               </button>
             </div>
           </form>
+          </fieldset>
         </div>
 
         {/* Live P&L Sidebar */}

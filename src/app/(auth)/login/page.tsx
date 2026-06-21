@@ -47,6 +47,7 @@ export default function LoginPage() {
         
         {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{error}</div>}
 
+        <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
         <form onSubmit={handleLogin}>
           <div className="form-group">
             <label className="form-label">Email</label>
@@ -80,6 +81,7 @@ export default function LoginPage() {
             {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
+        </fieldset>
 
         <div style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.9rem' }}>
           <span className="text-muted">Don't have an account? </span>
