@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Tesseract from 'tesseract.js';
 import { useRouter } from 'next/navigation';
 
-export default function BulkImageImport({ accounts }: { accounts: any[] }) {
+export default function BulkImageImport({ accounts, playbooks = [] }: { accounts: any[], playbooks?: any[] }) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [accountId, setAccountId] = useState(accounts.find(a => a.isDefault)?.id || (accounts.length > 0 ? accounts[0].id : ''));
@@ -149,7 +149,13 @@ export default function BulkImageImport({ accounts }: { accounts: any[] }) {
         setProgress(`Scanning image ${i + 1} of ${files.length}...`);
         const { data: { text } } = await worker.recognize(files[i]);
         const parsed = parseText(text);
-        results.push({ ...parsed, _originalIndex: i });
+        
+        // Initialize extra journaling fields
+        parsed.playbookId = '';
+        parsed.mistakeTags = '';
+        parsed.notes = '';
+        
+        results.push({ ...parsed, _originalIndex: i, _file: files[i] });
       }
       
       await worker.terminate();
@@ -173,13 +179,7 @@ export default function BulkImageImport({ accounts }: { accounts: any[] }) {
   };
 
   const handleImport = async () => {
-    const tradesToImport = parsedRows.filter((r, i) => selectedRows.has(i) && r._isValid).map(r => {
-      const copy = { ...r, accountId };
-      delete copy._originalIndex;
-      delete copy._isValid;
-      delete copy._errors;
-      return copy;
-    });
+    const tradesToImport = parsedRows.filter((r, i) => selectedRows.has(i) && r._isValid);
 
     if (tradesToImport.length === 0) {
       setError('No valid trades selected for import.');
@@ -190,26 +190,60 @@ export default function BulkImageImport({ accounts }: { accounts: any[] }) {
     setError('');
 
     try {
-      const res = await fetch('/api/trades/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accountId,
-          trades: tradesToImport
-        }),
-      });
+      let successCount = 0;
+      
+      // We process sequentially so we can attach the specific image to the specific created trade
+      for (let i = 0; i < tradesToImport.length; i++) {
+        setProgress(`Importing trade ${i + 1} of ${tradesToImport.length}...`);
+        
+        const row = tradesToImport[i];
+        const copy = { ...row, accountId };
+        const file = copy._file;
+        
+        // Clean up internal state before sending
+        delete copy._originalIndex;
+        delete copy._isValid;
+        delete copy._errors;
+        delete copy._file;
 
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Success! ${data.count} trades imported.`);
-        router.push('/journal');
-      } else {
-        setError(data.error || 'Failed to import trades');
+        // 1. Create Trade
+        const res = await fetch('/api/trades', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(copy),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || `Failed to import trade: ${copy.ticker}`);
+        }
+        
+        const createdTrade = await res.json();
+
+        // 2. Upload Screenshot if available
+        if (file && createdTrade.id) {
+          const formData = new FormData();
+          formData.append('file', file);
+          const imgRes = await fetch(`/api/trades/${createdTrade.id}/images`, {
+            method: 'POST',
+            body: formData,
+          });
+          if (!imgRes.ok) {
+            console.warn('Failed to upload image for trade', createdTrade.id);
+          }
+        }
+        
+        successCount++;
       }
-    } catch (err) {
-      setError('An unexpected error occurred during import.');
+
+      alert(`Success! ${successCount} trades imported and screenshots attached.`);
+      router.push('/journal');
+      
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred during import.');
     } finally {
       setLoading(false);
+      setProgress('');
     }
   };
 
@@ -218,6 +252,12 @@ export default function BulkImageImport({ accounts }: { accounts: any[] }) {
     if (newSet.has(index)) newSet.delete(index);
     else newSet.add(index);
     setSelectedRows(newSet);
+  };
+  
+  const updateRowField = (index: number, field: string, value: string) => {
+    const newRows = [...parsedRows];
+    newRows[index][field] = value;
+    setParsedRows(newRows);
   };
 
   return (
@@ -249,7 +289,7 @@ export default function BulkImageImport({ accounts }: { accounts: any[] }) {
               <>
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ marginBottom: '1rem' }}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><circle cx="10" cy="13" r="2"></circle><path d="M16 17l-3-3-3 3"></path></svg>
                 <h4 style={{ marginBottom: '0.5rem' }}>Upload Multiple MT5 Screenshots</h4>
-                <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Select multiple trade screenshots. We will scan all of them sequentially and show you a preview before importing.</p>
+                <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Select multiple trade screenshots. We will scan all of them sequentially and let you review and add journal notes before importing.</p>
                 
                 <label className="btn btn-primary" style={{ cursor: 'pointer', display: 'inline-block' }}>
                   Select Screenshots
@@ -263,60 +303,151 @@ export default function BulkImageImport({ accounts }: { accounts: any[] }) {
 
       {step === 2 && (
         <div className="animate-slide-up">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
-            <p className="text-muted" style={{ margin: 0 }}>Review the parsed trades from your screenshots.</p>
-            <div className="mono" style={{ fontSize: '0.9rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+            <p className="text-muted" style={{ margin: 0 }}>Review parsed trades, correct any misreads, and add your playbook & notes before importing. Screenshots will automatically be attached!</p>
+            <div className="mono" style={{ fontSize: '0.9rem', backgroundColor: 'var(--surface-light)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
               <span className="text-accent">{Array.from(selectedRows).filter(i => parsedRows[i]._isValid).length}</span> valid trades selected
             </div>
           </div>
+          
+          {loading && (
+             <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: 'var(--surface-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span className="spinner"></span>
+                <p className="mono fw-bold" style={{ margin: 0 }}>{progress}</p>
+             </div>
+          )}
 
-          <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '2rem' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-              <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--surface)', zIndex: 1 }}>
-                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
-                  <th style={{ padding: '0.75rem' }}>Import</th>
-                  <th style={{ padding: '0.75rem' }}>Date</th>
-                  <th style={{ padding: '0.75rem' }}>Ticker</th>
-                  <th style={{ padding: '0.75rem' }}>Dir</th>
-                  <th style={{ padding: '0.75rem' }}>Entry</th>
-                  <th style={{ padding: '0.75rem' }}>Size</th>
-                  <th style={{ padding: '0.75rem' }}>P&L</th>
-                  <th style={{ padding: '0.75rem' }}>Errors</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parsedRows.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--border)', backgroundColor: row._isValid ? 'transparent' : 'rgba(255, 69, 58, 0.05)', opacity: selectedRows.has(i) ? 1 : 0.5 }}>
-                    <td style={{ padding: '0.75rem' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedRows.has(i)} 
-                        onChange={() => toggleRow(i)} 
-                        disabled={!row._isValid}
-                        style={{ width: '16px', height: '16px', accentColor: 'var(--accent)' }}
-                      />
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>{row.entryDate ? new Date(row.entryDate).toLocaleDateString() : '--'}</td>
-                    <td style={{ padding: '0.75rem' }} className="mono fw-bold">{row.ticker || '--'}</td>
-                    <td style={{ padding: '0.75rem' }}><span className={`badge ${row.direction === 'Long' ? 'win' : 'loss'}`}>{row.direction}</span></td>
-                    <td style={{ padding: '0.75rem' }} className="mono">{row.entryPrice ? `$${row.entryPrice}` : '--'}</td>
-                    <td style={{ padding: '0.75rem' }} className="mono">{row.positionSize || '--'}</td>
-                    <td style={{ padding: '0.75rem' }} className={`mono ${parseFloat(row.pnl) >= 0 ? 'text-accent' : 'text-danger'}`}>
-                      {row.pnl ? `$${row.pnl}` : '--'}
-                    </td>
-                    <td style={{ padding: '0.75rem', color: 'var(--danger)' }}>
-                      {!row._isValid && row._errors.join(', ')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
+             {parsedRows.map((row, i) => (
+               <div key={i} style={{ 
+                  backgroundColor: 'var(--surface)', 
+                  border: `1px solid ${selectedRows.has(i) ? 'var(--border)' : 'transparent'}`, 
+                  borderLeft: `4px solid ${row._isValid ? (selectedRows.has(i) ? 'var(--accent)' : 'var(--border)') : 'var(--danger)'}`,
+                  borderRadius: '8px', 
+                  padding: '1.5rem',
+                  opacity: selectedRows.has(i) ? 1 : 0.5,
+                  transition: 'all 0.2s ease'
+               }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <input 
+                           type="checkbox" 
+                           checked={selectedRows.has(i)} 
+                           onChange={() => toggleRow(i)} 
+                           disabled={!row._isValid || loading}
+                           style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                           <input 
+                              type="text" 
+                              value={row.ticker || ''} 
+                              onChange={e => updateRowField(i, 'ticker', e.target.value)}
+                              className="form-input"
+                              style={{ width: '120px', fontSize: '1.1rem', fontWeight: 'bold' }}
+                              placeholder="Ticker"
+                           />
+                           <select 
+                              value={row.direction || 'Long'} 
+                              onChange={e => updateRowField(i, 'direction', e.target.value)}
+                              className="form-select"
+                              style={{ width: '100px' }}
+                           >
+                              <option value="Long">Long</option>
+                              <option value="Short">Short</option>
+                           </select>
+                           <select 
+                              value={row.assetClass || 'Stocks'} 
+                              onChange={e => updateRowField(i, 'assetClass', e.target.value)}
+                              className="form-select"
+                              style={{ width: '110px' }}
+                           >
+                              <option value="Stocks">Stocks</option>
+                              <option value="Options">Options</option>
+                              <option value="Crypto">Crypto</option>
+                              <option value="Forex">Forex</option>
+                           </select>
+                        </div>
+                     </div>
+                     {!row._isValid && <span className="text-danger" style={{ fontSize: '0.8rem', backgroundColor: 'rgba(255, 69, 58, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>{row._errors.join(', ')}</span>}
+                  </div>
+                  
+                  {/* Grid of details */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Entry Date</label>
+                        <input type="datetime-local" className="form-input" value={row.entryDate || ''} onChange={e => updateRowField(i, 'entryDate', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Exit Date</label>
+                        <input type="datetime-local" className="form-input" value={row.exitDate || ''} onChange={e => updateRowField(i, 'exitDate', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Entry Price</label>
+                        <input type="number" step="any" className="form-input" value={row.entryPrice || ''} onChange={e => updateRowField(i, 'entryPrice', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Exit Price</label>
+                        <input type="number" step="any" className="form-input" value={row.exitPrice || ''} onChange={e => updateRowField(i, 'exitPrice', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Size</label>
+                        <input type="number" step="any" className="form-input" value={row.positionSize || ''} onChange={e => updateRowField(i, 'positionSize', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>P&L ($)</label>
+                        <input type="number" step="any" className="form-input" value={row.pnl || ''} onChange={e => updateRowField(i, 'pnl', e.target.value)} placeholder="Auto-calculated if blank" />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Stop Loss</label>
+                        <input type="number" step="any" className="form-input" value={row.stopLoss || ''} onChange={e => updateRowField(i, 'stopLoss', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Take Profit</label>
+                        <input type="number" step="any" className="form-input" value={row.takeProfit || ''} onChange={e => updateRowField(i, 'takeProfit', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Fees / Swap</label>
+                        <input type="number" step="any" className="form-input" value={row.fees || ''} onChange={e => updateRowField(i, 'fees', e.target.value)} />
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Broker Trade ID</label>
+                        <input type="text" className="form-input" value={row.brokerTradeId || ''} onChange={e => updateRowField(i, 'brokerTradeId', e.target.value)} />
+                     </div>
+                  </div>
+                  
+                  {/* Journaling section */}
+                  <div style={{ backgroundColor: 'var(--surface-light)', padding: '1rem', borderRadius: '8px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Playbook</label>
+                        <select className="form-select" value={row.playbookId || ''} onChange={e => updateRowField(i, 'playbookId', e.target.value)}>
+                          <option value="">-- No Playbook --</option>
+                          {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                     </div>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Mistakes (comma separated)</label>
+                        <input type="text" className="form-input" value={row.mistakeTags || ''} onChange={e => updateRowField(i, 'mistakeTags', e.target.value)} placeholder="e.g. FOMO, Hesitation" />
+                     </div>
+                     <div style={{ gridColumn: '1 / -1' }}>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Journal Notes</label>
+                        <textarea 
+                           className="form-input" 
+                           rows={2} 
+                           value={row.notes || ''} 
+                           onChange={e => updateRowField(i, 'notes', e.target.value)} 
+                           placeholder="What went well? What went wrong?"
+                           style={{ resize: 'vertical' }}
+                        ></textarea>
+                     </div>
+                  </div>
+               </div>
+             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', position: 'sticky', bottom: '2rem', backgroundColor: 'var(--surface)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', zIndex: 10 }}>
             <button className="btn btn-ghost" onClick={() => setStep(1)} disabled={loading}>Back</button>
-            <button className="btn btn-primary" onClick={handleImport} disabled={loading || Array.from(selectedRows).length === 0}>
-              {loading ? 'Importing...' : 'Confirm & Import Trades'}
+            <button className="btn btn-primary" onClick={handleImport} disabled={loading || Array.from(selectedRows).length === 0} style={{ flex: 1 }}>
+              {loading ? 'Processing...' : 'Confirm & Import Selected Trades'}
             </button>
           </div>
         </div>
