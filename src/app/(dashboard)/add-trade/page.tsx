@@ -105,9 +105,10 @@ export default function AddTradePage() {
         body: JSON.stringify({
           ...formData,
           pnl: formData.pnl ? parseFloat(formData.pnl) : (livePnl !== null ? livePnl : null),
-          // If status is Open, we clear exit price
+          // Convert local datetime string to ISO string so server stores the correct UTC equivalent
+          entryDate: new Date(formData.entryDate).toISOString(),
           exitPrice: formData.status === 'Open' ? null : formData.exitPrice,
-          exitDate: formData.status === 'Open' ? null : formData.exitDate,
+          exitDate: formData.status === 'Open' || !formData.exitDate ? null : new Date(formData.exitDate).toISOString(),
         }),
       });
 

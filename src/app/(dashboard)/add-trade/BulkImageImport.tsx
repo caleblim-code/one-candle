@@ -204,6 +204,10 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
         delete copy._isValid;
         delete copy._errors;
 
+        // Convert local datetime strings to ISO strings so server stores the correct UTC equivalent
+        if (copy.entryDate) copy.entryDate = new Date(copy.entryDate).toISOString();
+        if (copy.exitDate) copy.exitDate = new Date(copy.exitDate).toISOString();
+
         // 1. Create Trade
         const res = await fetch('/api/trades', {
           method: 'POST',
