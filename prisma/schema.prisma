@@ -55,6 +55,8 @@ model TradingAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   trades    Trade[]
+  rules     PropFirmRules?
+  payouts   Payout[]
 }
 
 model Trade {
@@ -95,4 +97,33 @@ model DailyJournal {
   updatedAt   DateTime @updatedAt
 
   @@unique([userId, date])
+}
+
+model PropFirmRules {
+  id               String   @id @default(uuid())
+  accountId        String   @unique
+  account          TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  firmName         String   @default("Custom")
+  maxDailyLoss     Float    @default(0)
+  maxTotalDrawdown Float    @default(0)
+  profitTarget     Float    @default(0)
+  trailingDrawdown Boolean  @default(false)
+  minTradingDays   Int      @default(0)
+  maxTradingDays   Int?     // optional
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Payout {
+  id              String   @id @default(uuid())
+  accountId       String
+  account         TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  amount          Float
+  date            DateTime
+  status          String   @default("Pending") // Pending, Paid, Rejected
+  method          String?  // optional: Wire, ACH, Crypto, PayPal, etc.
+  processingDays  Int?     // optional: how many days it took
+  reference       String?  // optional: transaction/reference number
+  notes           String?  // optional: any notes
+  createdAt       DateTime @default(now())
 }

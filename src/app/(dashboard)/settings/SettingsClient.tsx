@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SettingsClient({ user }: { user: any }) {
@@ -18,6 +18,41 @@ export default function SettingsClient({ user }: { user: any }) {
 
   const [accounts, setAccounts] = useState<any[]>([]);
   const [newAccount, setNewAccount] = useState({ name: '', type: 'Live Personal', balance: 0 });
+  const [editingRulesFor, setEditingRulesFor] = useState<string | null>(null);
+  const [rulesFormData, setRulesFormData] = useState<any>({
+    firmName: 'Apex', maxDailyLoss: 2500, maxTotalDrawdown: 3000, profitTarget: 3000, trailingDrawdown: true, minTradingDays: 7
+  });
+
+  const PRESETS = {
+    'Apex 50k': { firmName: 'Apex', maxDailyLoss: 2500, maxTotalDrawdown: 3000, profitTarget: 3000, trailingDrawdown: true, minTradingDays: 7 },
+    'TopStep 50k': { firmName: 'TopStep', maxDailyLoss: 1000, maxTotalDrawdown: 2000, profitTarget: 3000, trailingDrawdown: false, minTradingDays: 5 },
+    'FTMO 100k': { firmName: 'FTMO', maxDailyLoss: 5000, maxTotalDrawdown: 10000, profitTarget: 10000, trailingDrawdown: false, minTradingDays: 4 },
+  };
+
+  const loadRules = async (accountId: string) => {
+    setEditingRulesFor(accountId);
+    const res = await fetch(`/api/accounts/${accountId}/rules`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data) setRulesFormData(data);
+    }
+  };
+
+  const saveRules = async () => {
+    if (!editingRulesFor) return;
+    setLoading(true);
+    const res = await fetch(`/api/accounts/${editingRulesFor}/rules`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rulesFormData)
+    });
+    if (res.ok) {
+      setMsg({ text: 'Prop firm rules saved successfully', type: 'success' });
+      setEditingRulesFor(null);
+    }
+    setLoading(false);
+    setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+  };
 
   // Fetch accounts on load
   useEffect(() => {
@@ -171,18 +206,66 @@ export default function SettingsClient({ user }: { user: any }) {
                 </thead>
                 <tbody>
                   {accounts.map(acc => (
-                    <tr key={acc.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '1rem 0', fontWeight: 'bold' }}>{acc.name}</td>
-                      <td style={{ padding: '1rem 0' }}><span className="badge">{acc.type}</span></td>
-                      <td style={{ padding: '1rem 0' }} className="mono">${acc.balance.toFixed(2)}</td>
-                      <td style={{ padding: '1rem 0', textAlign: 'right' }}>
-                        {acc.isDefault ? (
-                          <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>✓</span>
-                        ) : (
-                          <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>Set Default</button>
-                        )}
-                      </td>
-                    </tr>
+                    <Fragment key={acc.id}>
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '1rem 0', fontWeight: 'bold' }}>{acc.name}</td>
+                        <td style={{ padding: '1rem 0' }}><span className="badge">{acc.type}</span></td>
+                        <td style={{ padding: '1rem 0' }} className="mono">${acc.balance.toFixed(2)}</td>
+                        <td style={{ padding: '1rem 0', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          {acc.type.includes('Prop Firm') && (
+                            <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }} onClick={() => loadRules(acc.id)}>Configure Rules</button>
+                          )}
+                          {acc.isDefault ? (
+                            <span style={{ color: 'var(--accent)', fontWeight: 'bold', display: 'inline-block', width: '80px', textAlign: 'center' }}>✓ Default</span>
+                          ) : (
+                            <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', width: '80px' }}>Set Default</button>
+                          )}
+                        </td>
+                      </tr>
+                      {editingRulesFor === acc.id && (
+                        <tr key={`rules-${acc.id}`}>
+                          <td colSpan={4} style={{ padding: '1rem', backgroundColor: 'var(--surface-light)', borderBottom: '1px solid var(--border)' }}>
+                            <h4 style={{ marginBottom: '1rem' }}>Configure Prop Firm Rules for {acc.name}</h4>
+                            <div style={{ marginBottom: '1rem' }}>
+                              <label className="text-muted" style={{ fontSize: '0.8rem', marginRight: '1rem' }}>Presets:</label>
+                              {Object.entries(PRESETS).map(([name, preset]) => (
+                                <button key={name} type="button" className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', marginRight: '0.5rem', border: '1px solid var(--border)' }} onClick={() => setRulesFormData(preset)}>{name}</button>
+                              ))}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label">Firm Name</label>
+                                <input type="text" className="form-input" value={rulesFormData.firmName || ''} onChange={e => setRulesFormData({...rulesFormData, firmName: e.target.value})} />
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label">Max Daily Loss ($)</label>
+                                <input type="number" className="form-input" value={rulesFormData.maxDailyLoss || 0} onChange={e => setRulesFormData({...rulesFormData, maxDailyLoss: parseFloat(e.target.value)})} />
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label">Max Drawdown ($)</label>
+                                <input type="number" className="form-input" value={rulesFormData.maxTotalDrawdown || 0} onChange={e => setRulesFormData({...rulesFormData, maxTotalDrawdown: parseFloat(e.target.value)})} />
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label">Profit Target ($)</label>
+                                <input type="number" className="form-input" value={rulesFormData.profitTarget || 0} onChange={e => setRulesFormData({...rulesFormData, profitTarget: parseFloat(e.target.value)})} />
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label">Min Trading Days</label>
+                                <input type="number" className="form-input" value={rulesFormData.minTradingDays || 0} onChange={e => setRulesFormData({...rulesFormData, minTradingDays: parseInt(e.target.value, 10)})} />
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
+                                <input type="checkbox" id="trailingDrawdown" checked={rulesFormData.trailingDrawdown || false} onChange={e => setRulesFormData({...rulesFormData, trailingDrawdown: e.target.checked})} />
+                                <label htmlFor="trailingDrawdown" className="form-label" style={{ marginBottom: 0 }}>Trailing Drawdown?</label>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                              <button className="btn btn-primary" onClick={saveRules} disabled={loading}>{loading ? 'Saving...' : 'Save Rules'}</button>
+                              <button className="btn btn-ghost" onClick={() => setEditingRulesFor(null)}>Cancel</button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
