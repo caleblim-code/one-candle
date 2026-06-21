@@ -59,7 +59,8 @@ export default function AddTradePage() {
     accountId: '',
     mistakeTags: '',
     notes: '',
-    brokerTradeId: ''
+    brokerTradeId: '',
+    pnl: ''
   });
   
   const [images, setImages] = useState<File[]>([]);
@@ -113,7 +114,7 @@ export default function AddTradePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          pnl: livePnl,
+          pnl: formData.pnl ? parseFloat(formData.pnl) : (livePnl !== null ? livePnl : null),
           // If status is Open, we clear exit price
           exitPrice: formData.status === 'Open' ? null : formData.exitPrice,
           exitDate: formData.status === 'Open' ? null : formData.exitDate,
@@ -245,7 +246,7 @@ export default function AddTradePage() {
                 <input required type="number" step="any" name="entryPrice" className="form-input mono" style={!formData.entryPrice ? { borderColor: 'var(--danger)' } : {}} value={formData.entryPrice} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label className="form-label">Position Size</label>
+                <label className="form-label">Position Size (Shares / Lots)</label>
                 <input required type="number" step="any" name="positionSize" className="form-input mono" style={!formData.positionSize ? { borderColor: 'var(--danger)' } : {}} value={formData.positionSize} onChange={handleChange} />
               </div>
               <div className="form-group">
@@ -253,6 +254,14 @@ export default function AddTradePage() {
                 <input type="number" step="any" name="fees" className="form-input mono" value={formData.fees} onChange={handleChange} />
               </div>
               
+              <div className="form-group">
+                <label className="form-label">Realized P&L ($)</label>
+                <input type="number" step="any" name="pnl" className="form-input mono" value={formData.pnl} onChange={handleChange} placeholder={livePnl !== null ? `Auto-calculated: $${livePnl.toFixed(2)}` : "e.g. 43.10"} />
+                <span className="text-muted" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                  Leave blank to use auto-calculated P&L (Works best for Stocks/Crypto. CFDs/Forex require manual entry due to varying lot multipliers).
+                </span>
+              </div>
+
               {formData.status === 'Closed' && (
                 <div className="form-group">
                   <label className="form-label">Exit Price</label>

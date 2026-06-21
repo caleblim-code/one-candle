@@ -67,6 +67,27 @@ export default function ImageImport({ onParsed }: { onParsed: (data: any) => voi
       data.fees = totalFees.toFixed(2);
     }
 
+    // 6. PNL - appears on the price line as the last number (e.g. "64308.08 — 64185.00 -12.31")
+    // Or we can look for the standalone number after the two prices on that line
+    if (data.entryPrice && data.exitPrice) {
+      // Find the line that contains both prices and grab the trailing number
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (line.includes(data.entryPrice.replace('.', ',')) || line.includes(data.entryPrice)) {
+          // Look for a number at the end of this line (possibly negative)
+          const pnlMatch = line.match(/(-?[0-9]+[.,][0-9]{1,2})\s*$/);
+          if (pnlMatch) {
+            const pnlVal = pnlMatch[1].replace(',', '.');
+            // Make sure it's not the entry or exit price itself
+            if (pnlVal !== data.entryPrice && pnlVal !== data.exitPrice) {
+              data.pnl = pnlVal;
+            }
+          }
+          break;
+        }
+      }
+    }
+
     // If we didn't find the bare minimum, throw an error
     if (!data.ticker && !data.entryPrice) {
       throw new Error("Could not detect any trade data from this image. Ensure it's a clear MT5 result screenshot.");
