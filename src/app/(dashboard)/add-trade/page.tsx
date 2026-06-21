@@ -371,9 +371,14 @@ export default function AddTradePage() {
             
             <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
               <span className="text-muted">Net P&L</span>
-              <span className={`mono ${livePnl === null ? '' : livePnl >= 0 ? 'text-accent' : 'text-danger'}`} style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                {livePnl === null ? '--' : `${livePnl >= 0 ? '+' : ''}$${livePnl.toFixed(2)}`}
-              </span>
+              {(() => {
+                const displayPnl = formData.pnl ? parseFloat(formData.pnl) : livePnl;
+                return (
+                  <span className={`mono ${displayPnl === null ? '' : displayPnl >= 0 ? 'text-accent' : 'text-danger'}`} style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                    {displayPnl === null ? '--' : `${displayPnl >= 0 ? '+' : ''}$${displayPnl.toFixed(2)}`}
+                  </span>
+                );
+              })()}
             </div>
 
             <div style={{ borderTop: '1px solid var(--border)', margin: '1.5rem 0' }}></div>
