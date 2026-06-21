@@ -145,12 +145,15 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                         <div>
                           <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Trade Details</h4>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div><span className="text-muted">Broker Trade ID:</span> <span className="mono">{trade.brokerTradeId || '--'}</span></div>
                             <div><span className="text-muted">Asset Class:</span> {trade.assetClass}</div>
-                            <div><span className="text-muted">Stop Loss:</span> {trade.stopLoss ? `$${trade.stopLoss}` : '--'}</div>
-                            <div><span className="text-muted">Take Profit:</span> {trade.takeProfit ? `$${trade.takeProfit}` : '--'}</div>
-                            <div><span className="text-muted">Fees:</span> ${trade.fees}</div>
+                            <div><span className="text-muted">Entry Time:</span> {new Date(trade.entryDate).toLocaleTimeString()}</div>
+                            <div><span className="text-muted">Exit Time:</span> {trade.exitDate ? new Date(trade.exitDate).toLocaleTimeString() : '--'}</div>
+                            <div><span className="text-muted">Stop Loss:</span> <span className="mono">{trade.stopLoss ? `$${trade.stopLoss}` : '--'}</span></div>
+                            <div><span className="text-muted">Take Profit:</span> <span className="mono">{trade.takeProfit ? `$${trade.takeProfit}` : '--'}</span></div>
+                            <div><span className="text-muted">Fees / Swap:</span> <span className="mono">${trade.fees}</span></div>
                             <div><span className="text-muted">Setup:</span> {trade.setupTag || '--'}</div>
-                            <div><span className="text-muted">Playbook:</span> {trade.playbook ? <span style={{ color: 'var(--accent)' }}>{trade.playbook.name}</span> : '--'}</div>
+                            <div style={{ gridColumn: '1 / -1' }}><span className="text-muted">Playbook:</span> {trade.playbook ? <span style={{ color: 'var(--accent)' }}>{trade.playbook.name}</span> : '--'}</div>
                           </div>
                           
                           {trade.mistakeTags && (

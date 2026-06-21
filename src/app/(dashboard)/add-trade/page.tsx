@@ -166,7 +166,7 @@ export default function AddTradePage() {
       {mode === 'import' ? (
         <CsvImport accounts={accounts} />
       ) : mode === 'ocr' ? (
-        <BulkImageImport accounts={accounts} playbooks={playbooks} />
+        <BulkImageImport accounts={accounts} playbooks={playbooks} setupTagsList={setupTagsList} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
         <div className="card">

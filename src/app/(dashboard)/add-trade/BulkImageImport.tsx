@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Tesseract from 'tesseract.js';
 import { useRouter } from 'next/navigation';
 
-export default function BulkImageImport({ accounts, playbooks = [] }: { accounts: any[], playbooks?: any[] }) {
+export default function BulkImageImport({ accounts, playbooks = [], setupTagsList = [] }: { accounts: any[], playbooks?: any[], setupTagsList?: string[] }) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [accountId, setAccountId] = useState(accounts.find(a => a.isDefault)?.id || (accounts.length > 0 ? accounts[0].id : ''));
@@ -151,6 +151,7 @@ export default function BulkImageImport({ accounts, playbooks = [] }: { accounts
         const parsed = parseText(text);
         
         // Initialize extra journaling fields
+        parsed.setupTag = '';
         parsed.playbookId = '';
         parsed.mistakeTags = '';
         parsed.notes = '';
@@ -401,6 +402,13 @@ export default function BulkImageImport({ accounts, playbooks = [] }: { accounts
                   
                   {/* Journaling section */}
                   <div style={{ backgroundColor: 'var(--surface-light)', padding: '1rem', borderRadius: '8px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                     <div>
+                        <label className="form-label" style={{ fontSize: '0.8rem' }}>Setup Tag</label>
+                        <select className="form-select" value={row.setupTag || ''} onChange={e => updateRowField(i, 'setupTag', e.target.value)}>
+                          <option value="">-- No Setup --</option>
+                          {setupTagsList.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                     </div>
                      <div>
                         <label className="form-label" style={{ fontSize: '0.8rem' }}>Playbook</label>
                         <select className="form-select" value={row.playbookId || ''} onChange={e => updateRowField(i, 'playbookId', e.target.value)}>
