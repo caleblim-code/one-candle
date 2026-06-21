@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CsvImport from './CsvImport';
-import ImageImport from './ImageImport';
+import BulkImageImport from './BulkImageImport';
 
 export default function AddTradePage() {
   const [playbooks, setPlaybooks] = useState<any[]>([]);
@@ -68,16 +68,6 @@ export default function AddTradePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mode, setMode] = useState<'manual' | 'import' | 'ocr'>('manual');
-
-  const handleOcrParsed = (data: any) => {
-    setFormData(prev => ({
-      ...prev,
-      status: 'Closed',
-      ...data
-    }));
-    setMode('manual');
-    setError(''); // clear errors if any
-  };
 
   // Live P&L Calc
   useEffect(() => {
@@ -166,7 +156,7 @@ export default function AddTradePage() {
             onClick={() => setMode('ocr')}
             style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', backgroundColor: mode === 'ocr' ? 'var(--surface-light)' : 'transparent', color: mode === 'ocr' ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: mode === 'ocr' ? 600 : 400, cursor: 'pointer', transition: 'all 150ms ease' }}
           >
-            Import Image
+            Bulk OCR Import
           </button>
         </div>
       </div>
@@ -176,7 +166,7 @@ export default function AddTradePage() {
       {mode === 'import' ? (
         <CsvImport accounts={accounts} />
       ) : mode === 'ocr' ? (
-        <ImageImport onParsed={handleOcrParsed} />
+        <BulkImageImport accounts={accounts} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
         <div className="card">
