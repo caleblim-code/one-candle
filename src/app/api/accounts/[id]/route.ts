@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params;
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -12,7 +13,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     // Check if account exists
     const account = await prisma.tradingAccount.findUnique({
-      where: { id: params.id, userId: session.id }
+      where: { id: id, userId: session.id }
     });
 
     if (!account) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -20,13 +21,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     // If making this default, unset others
     if (isDefault) {
       await prisma.tradingAccount.updateMany({
-        where: { userId: session.id, id: { not: params.id } },
+        where: { userId: session.id, id: { not: id } },
         data: { isDefault: false }
       });
     }
 
     const updated = await prisma.tradingAccount.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         name: name !== undefined ? name : account.name,
         type: type !== undefined ? type : account.type,
@@ -41,25 +42,26 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params;
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const accountToDelete = await prisma.tradingAccount.findUnique({
-      where: { id: params.id, userId: session.id }
+      where: { id: id, userId: session.id }
     });
 
     if (!accountToDelete) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     // First delete all trades associated with this account to avoid orphaned data
     await prisma.trade.deleteMany({
-      where: { accountId: params.id }
+      where: { accountId: id }
     });
 
     // Delete the account
     await prisma.tradingAccount.delete({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     // If it was the default account, set another account as default if any exists
