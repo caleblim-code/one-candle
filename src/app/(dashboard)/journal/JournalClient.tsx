@@ -104,8 +104,9 @@ export default function JournalClient({ accountId }: { accountId: string }) {
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
+        <div className="table-responsive">
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+            <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', backgroundColor: 'var(--surface-light)' }}>
               <th style={{ padding: '1rem' }}>Date</th>
               <th style={{ padding: '1rem' }}>Ticker</th>
@@ -141,7 +142,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                   <tr>
                     <td colSpan={8} style={{ padding: 0 }}>
                       <div className="animate-slide-up" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface-light)' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
                         <div>
                           <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Trade Details</h4>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -185,6 +186,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             ))}
           </tbody>
         </table>
+        </div>
         
         {/* Pagination Controls */}
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

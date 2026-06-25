@@ -172,8 +172,8 @@ export default function AddTradePage() {
       ) : mode === 'ocr' ? (
         <BulkImageImport accounts={accounts} playbooks={playbooks} setupTagsList={setupTagsList} />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem' }}>
-        <div className="card">
+        <div className="trade-grid">
+        <div className="card animate-fade-in" style={{ padding: '2rem' }}>
           <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -393,6 +393,18 @@ export default function AddTradePage() {
         </div>
         </div>
       )}
+      <style jsx>{`
+        .trade-grid {
+          display: grid;
+          grid-template-columns: 1fr 300px;
+          gap: 2rem;
+        }
+        @media (max-width: 768px) {
+          .trade-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }

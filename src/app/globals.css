@@ -249,3 +249,33 @@ input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type
   cursor: text;
 }
 
+/* Responsive Overrides */
+@media (max-width: 768px) {
+  .card {
+    padding: 1.25rem;
+  }
+  .btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+  }
+  .mobile-only {
+    display: block !important;
+  }
+  .desktop-only {
+    display: none !important;
+  }
+  
+  /* Tables on mobile */
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
