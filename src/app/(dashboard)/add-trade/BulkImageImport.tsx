@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Tesseract from 'tesseract.js';
 import { useRouter } from 'next/navigation';
+import { mutate } from 'swr';
 
 export default function BulkImageImport({ accounts, playbooks = [], setupTagsList = [] }: { accounts: any[], playbooks?: any[], setupTagsList?: string[] }) {
   const router = useRouter();
@@ -226,6 +227,8 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
       }
 
       alert(`Success! ${successCount} trades imported.`);
+      mutate(key => typeof key === 'string' && key.startsWith('/api/trades'), undefined, { revalidate: true });
+      router.refresh();
       router.push('/journal');
       
     } catch (err: any) {

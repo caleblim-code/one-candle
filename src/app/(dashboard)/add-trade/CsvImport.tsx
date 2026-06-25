@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
 import { useRouter } from 'next/navigation';
+import { mutate } from 'swr';
 
 export default function CsvImport({ accounts }: { accounts: any[] }) {
   const router = useRouter();
@@ -161,6 +162,8 @@ export default function CsvImport({ accounts }: { accounts: any[] }) {
       const data = await res.json();
       if (res.ok) {
         alert(`Success! ${data.count} trades imported.`);
+        mutate(key => typeof key === 'string' && key.startsWith('/api/trades'), undefined, { revalidate: true });
+        router.refresh();
         router.push('/journal');
       } else {
         setError(data.error || 'Failed to import trades');

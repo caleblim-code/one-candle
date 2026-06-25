@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { mutate } from 'swr';
 import CsvImport from './CsvImport';
 import BulkImageImport from './BulkImageImport';
 
@@ -125,6 +126,8 @@ export default function AddTradePage() {
             }).catch(() => {}); // silently fail individual image uploads for now
           }
         }
+        mutate(key => typeof key === 'string' && key.startsWith('/api/trades'), undefined, { revalidate: true });
+        router.refresh();
         router.push('/journal');
       } else {
         setError(data.error || 'Failed to add trade');
