@@ -18,6 +18,9 @@ export default function SettingsClient({ user }: { user: any }) {
 
   const [accounts, setAccounts] = useState<any[]>([]);
   const [newAccount, setNewAccount] = useState({ name: '', type: 'Live Personal', balance: 0 });
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [editingAccountData, setEditingAccountData] = useState<any>(null);
+  
   const [editingRulesFor, setEditingRulesFor] = useState<string | null>(null);
   const [rulesFormData, setRulesFormData] = useState<any>({
     firmName: 'Apex', maxDailyLoss: 2500, maxTotalDrawdown: 3000, profitTarget: 3000, trailingDrawdown: true, minTradingDays: 7
@@ -129,6 +132,51 @@ export default function SettingsClient({ user }: { user: any }) {
     handleUpdate(undefined, { ...formData, setupTags: JSON.stringify(setupTags), mistakeTags: JSON.stringify(newTags) });
   };
 
+  const handleSetDefault = async (id: string) => {
+    setLoading(true);
+    const res = await fetch(`/api/accounts/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isDefault: true })
+    });
+    if (res.ok) {
+      setAccounts(accounts.map(a => ({ ...a, isDefault: a.id === id })));
+    }
+    setLoading(false);
+  };
+
+  const handleEditAccount = (acc: any) => {
+    setEditingAccountId(acc.id);
+    setEditingAccountData({ name: acc.name, type: acc.type, balance: acc.balance });
+  };
+
+  const handleSaveAccount = async () => {
+    if (!editingAccountId) return;
+    setLoading(true);
+    const res = await fetch(`/api/accounts/${editingAccountId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editingAccountData)
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setAccounts(accounts.map(a => a.id === editingAccountId ? updated : a));
+      setEditingAccountId(null);
+    }
+    setLoading(false);
+  };
+
+  const handleDeleteAccount = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this account? All associated trades will also be deleted!')) return;
+    setLoading(true);
+    const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      const refetch = await fetch('/api/accounts').then(r => r.json());
+      setAccounts(Array.isArray(refetch) ? refetch : []);
+    }
+    setLoading(false);
+  };
+
   const tabStyle = (tab: string) => ({
     background: 'none', 
     border: 'none', 
@@ -208,17 +256,50 @@ export default function SettingsClient({ user }: { user: any }) {
                   {accounts.map(acc => (
                     <Fragment key={acc.id}>
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '1rem 0', fontWeight: 'bold' }}>{acc.name}</td>
-                        <td style={{ padding: '1rem 0' }}><span className="badge">{acc.type}</span></td>
-                        <td style={{ padding: '1rem 0' }} className="mono">${acc.balance.toFixed(2)}</td>
-                        <td style={{ padding: '1rem 0', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                          {acc.type.includes('Prop Firm') && (
-                            <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }} onClick={() => loadRules(acc.id)}>Configure Rules</button>
-                          )}
-                          {acc.isDefault ? (
-                            <span style={{ color: 'var(--accent)', fontWeight: 'bold', display: 'inline-block', width: '80px', textAlign: 'center' }}>✓ Default</span>
+                        <td style={{ padding: '1rem 0', fontWeight: 'bold' }}>
+                          {editingAccountId === acc.id ? (
+                            <input type="text" className="form-input" style={{ padding: '0.25rem', fontSize: '0.9rem' }} value={editingAccountData.name} onChange={e => setEditingAccountData({...editingAccountData, name: e.target.value})} />
+                          ) : acc.name}
+                        </td>
+                        <td style={{ padding: '1rem 0' }}>
+                          {editingAccountId === acc.id ? (
+                            <select className="form-select" style={{ padding: '0.25rem', fontSize: '0.9rem' }} value={editingAccountData.type} onChange={e => setEditingAccountData({...editingAccountData, type: e.target.value})}>
+                              <option>Live Personal</option>
+                              <option>Demo / Paper</option>
+                              <option>Prop Firm Challenge</option>
+                              <option>Prop Firm Funded</option>
+                              <option>IRA</option>
+                            </select>
                           ) : (
-                            <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', width: '80px' }}>Set Default</button>
+                            <span className="badge">{acc.type}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '1rem 0' }} className="mono">
+                          {editingAccountId === acc.id ? (
+                            <input type="number" className="form-input mono" style={{ padding: '0.25rem', fontSize: '0.9rem', width: '100px' }} value={editingAccountData.balance} onChange={e => setEditingAccountData({...editingAccountData, balance: parseFloat(e.target.value) || 0})} />
+                          ) : (
+                            `$${acc.balance.toFixed(2)}`
+                          )}
+                        </td>
+                        <td style={{ padding: '1rem 0', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                          {editingAccountId === acc.id ? (
+                            <>
+                              <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={handleSaveAccount} disabled={loading}>Save</button>
+                              <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => setEditingAccountId(null)}>Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              {acc.type.includes('Prop Firm') && (
+                                <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }} onClick={() => loadRules(acc.id)}>Configure Rules</button>
+                              )}
+                              <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => handleEditAccount(acc)}>Edit</button>
+                              <button className="btn btn-ghost text-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => handleDeleteAccount(acc.id)}>Delete</button>
+                              {acc.isDefault ? (
+                                <span style={{ color: 'var(--accent)', fontWeight: 'bold', display: 'inline-block', width: '80px', textAlign: 'center' }}>✓ Default</span>
+                              ) : (
+                                <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', width: '80px' }} onClick={() => handleSetDefault(acc.id)} disabled={loading}>Set Default</button>
+                              )}
+                            </>
                           )}
                         </td>
                       </tr>
