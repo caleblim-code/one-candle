@@ -203,6 +203,7 @@ export default function SettingsClient({ user }: { user: any }) {
         <button onClick={() => setActiveTab('accounts')} style={tabStyle('accounts')}>Portfolios</button>
         <button onClick={() => setActiveTab('preferences')} style={tabStyle('preferences')}>Trading Preferences</button>
         <button onClick={() => setActiveTab('tags')} style={tabStyle('tags')}>Tags Management</button>
+        <button onClick={() => setActiveTab('export')} style={tabStyle('export')}>Export Data</button>
         <button onClick={() => setActiveTab('security')} style={tabStyle('security')}>Account & Security</button>
       </div>
 
@@ -475,6 +476,105 @@ export default function SettingsClient({ user }: { user: any }) {
                 </div>
               ))}
               {mistakeTags.length === 0 && <span className="text-muted">No mistake tags yet.</span>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'export' && (
+        <div className="animate-fade-in" style={{ display: 'grid', gap: '2rem' }}>
+          <div className="card">
+            <h3 style={{ marginBottom: '0.5rem' }}>Export My Data</h3>
+            <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Download all of your trade data as a CSV or JSON file. This export includes every trade across all accounts, with full details including entry/exit dates, prices, P&L, setup tags, mistakes, playbook, and journal notes.</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+              {/* CSV Export */}
+              <div style={{ padding: '1.5rem', backgroundColor: 'var(--surface-light)', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textAlign: 'center' }}>
+                <div style={{ width: '50px', height: '50px', borderRadius: '12px', backgroundColor: 'rgba(0, 210, 75, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </div>
+                <div>
+                  <h4 style={{ marginBottom: '0.25rem' }}>CSV Format</h4>
+                  <p className="text-muted" style={{ fontSize: '0.8rem', margin: 0 }}>Spreadsheet-compatible. Opens in Excel, Google Sheets, etc.</p>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%' }}
+                  disabled={loading}
+                  onClick={() => {
+                    setLoading(true);
+                    setMsg({ text: 'Preparing CSV export...', type: 'success' });
+                    fetch('/api/user/export?format=csv')
+                      .then(res => {
+                        if (!res.ok) throw new Error('Export failed');
+                        return res.blob();
+                      })
+                      .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `onecandle_export_${new Date().toISOString().slice(0, 10)}.csv`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        setMsg({ text: 'CSV downloaded successfully!', type: 'success' });
+                      })
+                      .catch(() => setMsg({ text: 'Export failed. Please try again.', type: 'error' }))
+                      .finally(() => { setLoading(false); setTimeout(() => setMsg({ text: '', type: '' }), 3000); });
+                  }}
+                >
+                  {loading ? <span className="spinner"></span> : null}
+                  Download CSV
+                </button>
+              </div>
+
+              {/* JSON Export */}
+              <div style={{ padding: '1.5rem', backgroundColor: 'var(--surface-light)', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textAlign: 'center' }}>
+                <div style={{ width: '50px', height: '50px', borderRadius: '12px', backgroundColor: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <div>
+                  <h4 style={{ marginBottom: '0.25rem' }}>JSON Format</h4>
+                  <p className="text-muted" style={{ fontSize: '0.8rem', margin: 0 }}>Machine-readable. Useful for backups or importing into other tools.</p>
+                </div>
+                <button
+                  className="btn btn-ghost"
+                  style={{ width: '100%', border: '1px solid var(--border)' }}
+                  disabled={loading}
+                  onClick={() => {
+                    setLoading(true);
+                    setMsg({ text: 'Preparing JSON export...', type: 'success' });
+                    fetch('/api/user/export?format=json')
+                      .then(res => {
+                        if (!res.ok) throw new Error('Export failed');
+                        return res.blob();
+                      })
+                      .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `onecandle_export_${new Date().toISOString().slice(0, 10)}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        setMsg({ text: 'JSON downloaded successfully!', type: 'success' });
+                      })
+                      .catch(() => setMsg({ text: 'Export failed. Please try again.', type: 'error' }))
+                      .finally(() => { setLoading(false); setTimeout(() => setMsg({ text: '', type: '' }), 3000); });
+                  }}
+                >
+                  {loading ? <span className="spinner"></span> : null}
+                  Download JSON
+                </button>
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem', backgroundColor: 'var(--surface-light)', borderRadius: '8px', borderLeft: '3px solid var(--accent)' }}>
+              <p className="text-muted" style={{ fontSize: '0.85rem', margin: 0 }}>
+                <strong style={{ color: 'var(--text-color)' }}>What's included:</strong> All trades across every account — ticker, direction, asset class, entry/exit dates & prices, position size, stop loss, take profit, fees, P&L, status, setup tags, mistakes, playbook, and journal notes.
+              </p>
             </div>
           </div>
         </div>
