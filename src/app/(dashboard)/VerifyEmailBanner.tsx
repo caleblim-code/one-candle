@@ -56,7 +56,7 @@ export default function VerifyEmailBanner({ isVerified }: { isVerified?: boolean
     <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', borderBottom: '1px solid rgba(234, 179, 8, 0.3)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        <span style={{ color: '#fef08a' }}>Please verify your email address. Check your inbox for a verification link.</span>
+        <span style={{ color: 'var(--text-color)', fontWeight: '500' }}>Please verify your email address. Check your inbox for a verification link.</span>
         {message && <span style={{ marginLeft: '12px', fontStyle: 'italic', color: 'var(--text-color)' }}>{message}</span>}
       </div>
       <div style={{ display: 'flex', gap: '12px' }}>
