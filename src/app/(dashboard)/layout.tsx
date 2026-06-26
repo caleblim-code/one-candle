@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { prisma } from '@/lib/prisma';
 import LogoutButton from './LogoutButton';
 import SidebarNav from './SidebarNav';
 import DashboardShell from './DashboardShell';
@@ -14,6 +15,15 @@ export default async function DashboardLayout({
   const session = await getSession();
   if (!session) {
     redirect('/login');
+  }
+
+  let isVerified = session.emailVerified;
+  if (!isVerified) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: { emailVerified: true }
+    });
+    isVerified = user?.emailVerified || false;
   }
 
   const sidebarContent = (
@@ -33,7 +43,7 @@ export default async function DashboardLayout({
       userInitial={session.name?.[0]?.toUpperCase() || 'U'}
       userName={session.name || 'User'}
     >
-      <VerifyEmailBanner isVerified={session.emailVerified} />
+      <VerifyEmailBanner isVerified={isVerified} />
       {children}
     </DashboardShell>
   );
