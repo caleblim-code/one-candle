@@ -4,7 +4,7 @@ import { updateSession, getSession } from '@/lib/session'
 
 const protectedRoutes = ['/dashboard', '/journal', '/analytics', '/playbooks', '/settings', '/add-trade', '/daily-notes', '/prop-firm']
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const res = await updateSession(request)
   
   // Also perform auth checks for protected routes
