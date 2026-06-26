@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     })
 
     // Send verification email
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = new URL(req.url).origin;
     const verifyUrl = `${appUrl}/api/auth/verify-email?token=${emailVerifyToken}`;
     
     await sendEmail({
