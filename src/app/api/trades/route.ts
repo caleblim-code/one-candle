@@ -2,12 +2,22 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
+import { sanitize } from '@/lib/sanitize';
+
 export async function POST(req: Request) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json()
+    const rawBody = await req.json()
+    const body = {
+      ...rawBody,
+      ticker: sanitize(rawBody.ticker),
+      setupTag: sanitize(rawBody.setupTag),
+      mistakeTags: sanitize(rawBody.mistakeTags),
+      notes: sanitize(rawBody.notes),
+      brokerTradeId: sanitize(rawBody.brokerTradeId)
+    };
     const { ticker, assetClass, direction, entryPrice, exitPrice, positionSize, entryDate, exitDate, stopLoss, takeProfit, fees, pnl, status, setupTag, playbookId, accountId, mistakeTags, notes, brokerTradeId } = body;
 
     if (!ticker || !assetClass || !direction || !entryPrice || !positionSize || !entryDate) {

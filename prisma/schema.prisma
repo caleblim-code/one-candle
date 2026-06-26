@@ -22,6 +22,12 @@ model User {
   startingBalance Float      @default(0)
   setupTags       String?    // Stored as JSON string array
   mistakeTags     String?    // Stored as JSON string array
+  emailVerified   Boolean    @default(false)
+  emailVerifyToken String?
+  emailVerifyExpiry DateTime?
+  passwordResetToken String?
+  passwordResetExpiry DateTime?
+  lastVerifyEmailSent DateTime?
   createdAt       DateTime   @default(now())
   accounts        TradingAccount[]
   trades          Trade[]

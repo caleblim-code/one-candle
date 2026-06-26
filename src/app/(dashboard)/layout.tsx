@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import LogoutButton from './LogoutButton';
 import SidebarNav from './SidebarNav';
 import DashboardShell from './DashboardShell';
+import VerifyEmailBanner from './VerifyEmailBanner';
 
 export default async function DashboardLayout({
   children,
@@ -32,6 +33,7 @@ export default async function DashboardLayout({
       userInitial={session.name?.[0]?.toUpperCase() || 'U'}
       userName={session.name || 'User'}
     >
+      <VerifyEmailBanner isVerified={session.emailVerified} />
       {children}
     </DashboardShell>
   );

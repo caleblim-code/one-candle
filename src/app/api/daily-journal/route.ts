@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
+import { sanitize } from '@/lib/sanitize';
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +23,12 @@ export async function POST(request: Request) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = {
+      ...rawBody,
+      content: sanitize(rawBody.content),
+      mentalState: sanitize(rawBody.mentalState)
+    };
     const { date, content, mentalState } = body;
 
     if (!date) return NextResponse.json({ error: 'Date is required' }, { status: 400 });

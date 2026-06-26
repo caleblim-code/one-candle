@@ -1,30 +1,37 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { updateSession, decrypt } from './lib/session'
+import { updateSession, getSession } from '@/lib/session'
 
-export default async function proxy(request: NextRequest) {
-  // Update session expiration if present
+const protectedRoutes = ['/dashboard', '/journal', '/analytics', '/playbooks', '/settings', '/add-trade', '/daily-notes', '/prop-firm']
+
+export async function middleware(request: NextRequest) {
   const res = await updateSession(request)
-  const response = res || NextResponse.next()
-
+  
+  // Also perform auth checks for protected routes
   const path = request.nextUrl.pathname
-  const isProtectedRoute = path.startsWith('/dashboard') || path.startsWith('/journal') || path.startsWith('/add-trade')
-
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
+  
   if (isProtectedRoute) {
     const sessionCookie = request.cookies.get('session')?.value
     if (!sessionCookie) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    try {
-      await decrypt(sessionCookie)
-    } catch (e) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
   }
 
-  return response
+  // If we updated the session, return the response with the new cookie
+  // Otherwise, return next
+  return res || NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 }
