@@ -13,9 +13,16 @@ export default function PlaybookDetailClient({ playbook }: { playbook: any }) {
       const pnl = t.pnl || 0;
       if (pnl > 0) { grossProfit += pnl; wins++; }
       else if (pnl < 0) { grossLoss += Math.abs(pnl); losses++; }
-      if (t.stopLoss && t.entryPrice) {
-        const risk = Math.abs(t.entryPrice - t.stopLoss);
-        if (risk > 0) { totalR += pnl / (risk * t.positionSize); rCount++; }
+      if (t.stopLoss && t.entryPrice && t.exitPrice) {
+        let risk = 0, reward = 0;
+        if (t.direction === 'Long') {
+          risk = t.entryPrice - t.stopLoss;
+          reward = t.exitPrice - t.entryPrice;
+        } else {
+          risk = t.stopLoss - t.entryPrice;
+          reward = t.entryPrice - t.exitPrice;
+        }
+        if (risk > 0) { totalR += reward / risk; rCount++; }
       }
     });
     const netPnl = grossProfit - grossLoss;
