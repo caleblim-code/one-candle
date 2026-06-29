@@ -16,9 +16,12 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
   const [filterSetup, setFilterSetup] = useState('All');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarViewDate, setCalendarViewDate] = useState(new Date());
+  const [equityMode, setEquityMode] = useState<'pnl' | 'balance'>('pnl');
 
   const initialTrades = data?.trades || [];
   const initialJournals = data?.journals || [];
+  const accountBalance = data?.accountBalance || 0;
+  const transactions = data?.transactions || [];
 
   // Extract unique filter options
   const assetClasses = Array.from(new Set(initialTrades.map((t: any) => t.assetClass))).filter(Boolean);
@@ -106,10 +109,38 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
       return {
         name: `Trade ${i + 1}`,
         date: new Date(t.entryDate).toLocaleDateString(),
-        equity: cumulative
+        equity: cumulative,
+        pnl: t.pnl || 0
       };
     });
   }, [trades]);
+
+  const balanceEquityData = useMemo(() => {
+    if (!equityData || equityData.length === 0) return [];
+    const events: { name: string; date: string; sortDate: Date; pnl: number; txAmount: number }[] = [];
+    
+    equityData.forEach((d: any) => {
+      events.push({ name: d.name, date: d.date, sortDate: new Date(d.date), pnl: d.pnl, txAmount: 0 });
+    });
+    
+    transactions.forEach((tx: any) => {
+      const dateStr = new Date(tx.date).toLocaleDateString();
+      const amt = tx.type === 'Deposit' ? tx.amount : -tx.amount;
+      events.push({ name: tx.type, date: dateStr, sortDate: new Date(tx.date), pnl: 0, txAmount: amt });
+    });
+    
+    events.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime());
+    
+    let equity = accountBalance || 0;
+    const result = [{ name: 'Start', date: 'Start', equity }];
+    events.forEach(e => {
+      equity += e.pnl + e.txAmount;
+      result.push({ name: e.name, date: e.date, equity });
+    });
+    return result;
+  }, [equityData, transactions, accountBalance]);
+
+  const activeEquityData = equityMode === 'pnl' ? equityData : balanceEquityData;
 
   const pnlByPeriodData = useMemo(() => {
     const map = new Map<string, number>();
@@ -388,10 +419,16 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
       {/* Main Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem', marginBottom: '2rem' }}>
         <div className="card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Cumulative Equity Curve</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3>Cumulative Equity Curve</h3>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <button style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', fontWeight: equityMode === 'pnl' ? 'bold' : 'normal', backgroundColor: equityMode === 'pnl' ? 'var(--accent)' : 'transparent', color: equityMode === 'pnl' ? 'white' : 'var(--text-muted)', border: equityMode === 'pnl' ? '1px solid var(--accent)' : '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', transition: 'all 150ms ease' }} onClick={() => setEquityMode('pnl')}>Net P&L</button>
+              <button style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', fontWeight: equityMode === 'balance' ? 'bold' : 'normal', backgroundColor: equityMode === 'balance' ? 'var(--accent)' : 'transparent', color: equityMode === 'balance' ? 'white' : 'var(--text-muted)', border: equityMode === 'balance' ? '1px solid var(--accent)' : '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', transition: 'all 150ms ease' }} onClick={() => setEquityMode('balance')}>Account Balance</button>
+            </div>
+          </div>
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={equityData} margin={{ left: -20 }}>
+              <AreaChart data={activeEquityData} margin={{ left: -20 }}>
                 <defs>
                   <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>

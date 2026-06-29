@@ -59,11 +59,32 @@ export async function GET(req: Request) {
       };
     });
 
+    // Fetch account info for equity curve
+    let accountBalance = 0;
+    let transactions: any[] = [];
+    if (accountId && accountId !== 'all') {
+      const account = await prisma.tradingAccount.findFirst({ where: { id: accountId, userId: session.id } });
+      if (account) accountBalance = account.balance;
+      transactions = await prisma.accountTransaction.findMany({
+        where: { accountId },
+        orderBy: { date: 'asc' }
+      });
+    } else {
+      const accounts = await prisma.tradingAccount.findMany({ where: { userId: session.id } });
+      accountBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+      transactions = await prisma.accountTransaction.findMany({
+        where: { account: { userId: session.id } },
+        orderBy: { date: 'asc' }
+      });
+    }
+
     return NextResponse.json({
       success: true,
       stats: { totalTrades, winRate, totalPnl, averageWin, averageLoss },
       chartData,
-      recentTrades
+      recentTrades,
+      accountBalance,
+      transactions
     });
 
   } catch (error) {

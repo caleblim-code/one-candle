@@ -60,9 +60,10 @@ model TradingAccount {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  trades    Trade[]
-  rules     PropFirmRules?
-  payouts   Payout[]
+  trades       Trade[]
+  rules        PropFirmRules?
+  payouts      Payout[]
+  transactions AccountTransaction[]
 }
 
 model Trade {
@@ -149,4 +150,17 @@ model Payout {
   reference       String?  // optional: transaction/reference number
   notes           String?  // optional: any notes
   createdAt       DateTime @default(now())
+}
+
+model AccountTransaction {
+  id        String   @id @default(uuid())
+  accountId String
+  account   TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type      String   // "Deposit" or "Withdrawal"
+  amount    Float
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([accountId, date])
 }

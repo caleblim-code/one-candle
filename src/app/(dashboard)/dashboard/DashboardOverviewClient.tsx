@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
@@ -9,13 +10,43 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function DashboardOverviewClient({ accountId }: { accountId: string }) {
   const { data, error, isLoading } = useSWR(`/api/dashboard/stats?account=${accountId}`, fetcher);
+  const [equityMode, setEquityMode] = useState<'pnl' | 'balance'>('pnl');
 
   if (error) return <div className="text-danger" style={{ padding: '2rem' }}>Failed to load dashboard data.</div>;
   if (isLoading) return <DashboardLoading />;
   
   if (!data || !data.success) return <DashboardLoading />;
 
-  const { stats, chartData, recentTrades } = data;
+  const { stats, chartData, recentTrades, accountBalance, transactions } = data;
+
+  // Compute account balance chart data
+  const balanceChartData = useMemo(() => {
+    if (!chartData || chartData.length === 0) return [];
+    // Merge trades (from chartData) with transactions chronologically
+    const events: { date: string; sortDate: Date; pnl: number; txAmount: number }[] = [];
+    
+    chartData.forEach((d: any) => {
+      events.push({ date: d.date, sortDate: new Date(d.date), pnl: d.pnl, txAmount: 0 });
+    });
+    
+    (transactions || []).forEach((tx: any) => {
+      const dateStr = new Date(tx.date).toLocaleDateString();
+      const amt = tx.type === 'Deposit' ? tx.amount : -tx.amount;
+      events.push({ date: dateStr, sortDate: new Date(tx.date), pnl: 0, txAmount: amt });
+    });
+    
+    events.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime());
+    
+    let equity = accountBalance || 0;
+    const result = [{ date: 'Start', equity: equity }];
+    events.forEach(e => {
+      equity += e.pnl + e.txAmount;
+      result.push({ date: e.date, equity });
+    });
+    return result;
+  }, [chartData, transactions, accountBalance]);
+
+  const activeChartData = equityMode === 'pnl' ? chartData : balanceChartData;
 
   if (stats.totalTrades === 0) {
     return (
@@ -29,6 +60,18 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
       </div>
     );
   }
+
+  const toggleStyle = (active: boolean) => ({
+    padding: '0.4rem 1rem',
+    fontSize: '0.85rem',
+    fontWeight: active ? 'bold' as const : 'normal' as const,
+    backgroundColor: active ? 'var(--accent)' : 'transparent',
+    color: active ? 'white' : 'var(--text-muted)',
+    border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  });
 
   return (
     <div className="animate-fade-in">
@@ -59,11 +102,17 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem', marginBottom: '2rem' }}>
         <div className="card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Equity Curve</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3>Equity Curve</h3>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <button style={toggleStyle(equityMode === 'pnl')} onClick={() => setEquityMode('pnl')}>Net P&L</button>
+              <button style={toggleStyle(equityMode === 'balance')} onClick={() => setEquityMode('balance')}>Account Balance</button>
+            </div>
+          </div>
           <div style={{ flex: 1, minHeight: 0 }}>
-            {chartData.length > 0 ? (
+            {activeChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
+                <LineChart data={activeChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />

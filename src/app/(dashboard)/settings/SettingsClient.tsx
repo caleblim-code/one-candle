@@ -26,6 +26,10 @@ export default function SettingsClient({ user }: { user: any }) {
     firmName: 'Apex', maxDailyLoss: 2500, maxTotalDrawdown: 3000, profitTarget: 3000, trailingDrawdown: true, minTradingDays: 7
   });
 
+  const [fundingAccountId, setFundingAccountId] = useState<string | null>(null);
+  const [fundingTransactions, setFundingTransactions] = useState<any[]>([]);
+  const [newTransaction, setNewTransaction] = useState({ type: 'Deposit', amount: 0, date: new Date().toISOString().split('T')[0], notes: '' });
+
   const PRESETS = {
     'Apex 50k': { firmName: 'Apex', maxDailyLoss: 2500, maxTotalDrawdown: 3000, profitTarget: 3000, trailingDrawdown: true, minTradingDays: 7 },
     'TopStep 50k': { firmName: 'TopStep', maxDailyLoss: 1000, maxTotalDrawdown: 2000, profitTarget: 3000, trailingDrawdown: false, minTradingDays: 5 },
@@ -52,6 +56,47 @@ export default function SettingsClient({ user }: { user: any }) {
     if (res.ok) {
       setMsg({ text: 'Prop firm rules saved successfully', type: 'success' });
       setEditingRulesFor(null);
+    }
+    setLoading(false);
+    setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+  };
+
+  const loadFunding = async (accountId: string) => {
+    setFundingAccountId(accountId);
+    const res = await fetch(`/api/accounts/${accountId}/transactions`);
+    if (res.ok) {
+      const data = await res.json();
+      setFundingTransactions(Array.isArray(data) ? data : []);
+    }
+  };
+
+  const saveTransaction = async () => {
+    if (!fundingAccountId || !newTransaction.amount || newTransaction.amount <= 0) return;
+    setLoading(true);
+    const res = await fetch(`/api/accounts/${fundingAccountId}/transactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTransaction)
+    });
+    if (res.ok) {
+      setMsg({ text: 'Transaction added successfully', type: 'success' });
+      const addedTx = await res.json();
+      setFundingTransactions([...fundingTransactions, addedTx]);
+      setNewTransaction({ type: 'Deposit', amount: 0, date: new Date().toISOString().split('T')[0], notes: '' });
+    } else {
+      setMsg({ text: 'Failed to add transaction', type: 'error' });
+    }
+    setLoading(false);
+    setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+  };
+
+  const deleteTransaction = async (txId: string) => {
+    if (!fundingAccountId || !confirm('Delete this transaction?')) return;
+    setLoading(true);
+    const res = await fetch(`/api/accounts/${fundingAccountId}/transactions?txId=${txId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setFundingTransactions(fundingTransactions.filter(tx => tx.id !== txId));
+      setMsg({ text: 'Transaction deleted', type: 'success' });
     }
     setLoading(false);
     setTimeout(() => setMsg({ text: '', type: '' }), 3000);
@@ -293,6 +338,7 @@ export default function SettingsClient({ user }: { user: any }) {
                               {acc.type.includes('Prop Firm') && (
                                 <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }} onClick={() => loadRules(acc.id)}>Configure Rules</button>
                               )}
+                              <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }} onClick={() => loadFunding(acc.id)}>Funding</button>
                               <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => handleEditAccount(acc)}>Edit</button>
                               <button className="btn btn-ghost text-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => handleDeleteAccount(acc.id)}>Delete</button>
                               {acc.isDefault ? (
@@ -343,6 +389,71 @@ export default function SettingsClient({ user }: { user: any }) {
                             <div style={{ display: 'flex', gap: '1rem' }}>
                               <button className="btn btn-primary" onClick={saveRules} disabled={loading}>{loading ? 'Saving...' : 'Save Rules'}</button>
                               <button className="btn btn-ghost" onClick={() => setEditingRulesFor(null)}>Cancel</button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {fundingAccountId === acc.id && (
+                        <tr key={`funding-${acc.id}`}>
+                          <td colSpan={4} style={{ padding: '1rem', backgroundColor: 'var(--surface-light)', borderBottom: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                              <h4>Funding History for {acc.name}</h4>
+                              <button className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => setFundingAccountId(null)}>Close</button>
+                            </div>
+
+                            {fundingTransactions.length > 0 ? (
+                              <table style={{ width: '100%', marginBottom: '1.5rem', fontSize: '0.9rem', borderCollapse: 'collapse' }}>
+                                <thead>
+                                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                                    <th style={{ padding: '0.5rem 0' }}>Date</th>
+                                    <th style={{ padding: '0.5rem 0' }}>Type</th>
+                                    <th style={{ padding: '0.5rem 0' }}>Amount</th>
+                                    <th style={{ padding: '0.5rem 0' }}>Notes</th>
+                                    <th style={{ padding: '0.5rem 0', textAlign: 'right' }}>Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {fundingTransactions.map(tx => (
+                                    <tr key={tx.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                      <td style={{ padding: '0.5rem 0' }}>{new Date(tx.date).toLocaleDateString()}</td>
+                                      <td><span className={`badge ${tx.type === 'Deposit' ? 'win' : 'loss'}`}>{tx.type}</span></td>
+                                      <td className="mono fw-bold" style={{ color: tx.type === 'Deposit' ? 'var(--accent)' : 'var(--danger)' }}>
+                                        {tx.type === 'Deposit' ? '+' : '-'}${tx.amount.toFixed(2)}
+                                      </td>
+                                      <td className="text-muted">{tx.notes || '--'}</td>
+                                      <td style={{ textAlign: 'right' }}>
+                                        <button className="btn btn-ghost text-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }} onClick={() => deleteTransaction(tx.id)}>Delete</button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            ) : (
+                              <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>No funding transactions logged yet.</p>
+                            )}
+
+                            <h5 style={{ marginBottom: '0.5rem' }}>Add Transaction</h5>
+                            <div className="grid-responsive-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr auto', gap: '0.5rem', alignItems: 'end' }}>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Type</label>
+                                <select className="form-select" value={newTransaction.type} onChange={e => setNewTransaction({...newTransaction, type: e.target.value})}>
+                                  <option>Deposit</option>
+                                  <option>Withdrawal</option>
+                                </select>
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Amount ($)</label>
+                                <input type="number" className="form-input" value={newTransaction.amount || ''} onChange={e => setNewTransaction({...newTransaction, amount: parseFloat(e.target.value) || 0})} />
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Date</label>
+                                <input type="date" className="form-input" value={newTransaction.date} onChange={e => setNewTransaction({...newTransaction, date: e.target.value})} />
+                              </div>
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label className="form-label" style={{ fontSize: '0.8rem' }}>Notes (Optional)</label>
+                                <input type="text" className="form-input" value={newTransaction.notes} onChange={e => setNewTransaction({...newTransaction, notes: e.target.value})} placeholder="e.g. Initial funding" />
+                              </div>
+                              <button className="btn btn-primary" style={{ padding: '0.4rem 1rem' }} onClick={saveTransaction} disabled={loading || !newTransaction.amount || newTransaction.amount <= 0}>Add</button>
                             </div>
                           </td>
                         </tr>
