@@ -134,7 +134,8 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
               if (shouldBeProfit && pnlVal < 0) {
                 pnlVal = Math.abs(pnlVal);
               }
-              data.pnl = pnlVal.toFixed(2);
+              // pnlVal is Gross Profit. totalFees is Cost. Net PNL = Gross - Cost.
+              data.pnl = (pnlVal - totalFees).toFixed(2);
             }
           }
           break;

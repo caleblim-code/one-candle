@@ -152,7 +152,12 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                             <div><span className="text-muted">Exit Time:</span> {trade.exitDate ? new Date(trade.exitDate).toLocaleTimeString() : '--'}</div>
                             <div><span className="text-muted">Stop Loss:</span> <span className="mono">{trade.stopLoss ? `$${trade.stopLoss}` : '--'}</span></div>
                             <div><span className="text-muted">Take Profit:</span> <span className="mono">{trade.takeProfit ? `$${trade.takeProfit}` : '--'}</span></div>
-                            <div><span className="text-muted">Fees / Swap:</span> <span className="mono">${trade.fees}</span></div>
+                            <div>
+                              <span className="text-muted">Fees / Swap:</span>{' '}
+                              <span className={`mono ${trade.fees < 0 ? 'text-success' : trade.fees > 0 ? 'text-danger' : ''}`}>
+                                {trade.fees < 0 ? `+$${Math.abs(trade.fees)}` : `$${trade.fees}`}
+                              </span>
+                            </div>
                             <div><span className="text-muted">Setup:</span> {trade.setupTag || '--'}</div>
                             <div style={{ gridColumn: '1 / -1' }}><span className="text-muted">Playbook:</span> {trade.playbook ? <span style={{ color: 'var(--accent)' }}>{trade.playbook.name}</span> : '--'}</div>
                           </div>
