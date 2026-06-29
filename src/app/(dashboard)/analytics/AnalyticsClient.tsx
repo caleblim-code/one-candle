@@ -67,11 +67,19 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
         if (pnl < largestLoss) largestLoss = pnl;
       }
 
-      // R-Multiple calculation
-      if (t.stopLoss && t.entryPrice) {
-        const riskPerShare = Math.abs(t.entryPrice - t.stopLoss);
-        if (riskPerShare > 0) {
-          const rMultiple = pnl / (riskPerShare * t.positionSize);
+      // R-Multiple calculation based on price distance
+      if (t.stopLoss && t.entryPrice && t.exitPrice) {
+        let risk = 0;
+        let reward = 0;
+        if (t.direction === 'Long') {
+          risk = t.entryPrice - t.stopLoss;
+          reward = t.exitPrice - t.entryPrice;
+        } else {
+          risk = t.stopLoss - t.entryPrice;
+          reward = t.entryPrice - t.exitPrice;
+        }
+        if (risk > 0) {
+          const rMultiple = reward / risk;
           totalR += rMultiple;
           rCount++;
         }
@@ -473,46 +481,50 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
       {/* Calendar View */}
       <div className="card">
         <h3 style={{ marginBottom: '1.5rem' }}>Calendar View</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-            <div key={d} style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>{d}</div>
-          ))}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
-          {getCalendarGrid().map((cell, idx) => {
-            if (!cell) return <div key={idx} style={{ padding: '2rem', backgroundColor: 'transparent' }}></div>;
-            
-            const hasData = cell.data && cell.data.trades.length > 0;
-            const isPositive = cell.data && cell.data.pnl >= 0;
-            const bgColor = !hasData ? 'var(--surface-light)' : (isPositive ? 'rgba(0, 224, 84, 0.1)' : 'rgba(255, 69, 58, 0.1)');
-            const textColor = !hasData ? 'var(--text-muted)' : (isPositive ? 'var(--accent)' : 'var(--danger)');
-            
-            return (
-              <div 
-                key={idx} 
-                onClick={() => hasData && setSelectedDate(cell.date)}
-                style={{ 
-                  backgroundColor: bgColor, 
-                  borderRadius: '8px', 
-                  padding: '0.75rem', 
-                  minHeight: '80px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  cursor: hasData ? 'pointer' : 'default',
-                  transition: 'transform 150ms ease'
-                }}
-                className={hasData ? 'hover-scale' : ''}
-              >
-                <div style={{ color: 'var(--text-main)', fontWeight: 'bold', fontSize: '0.9rem' }}>{cell.day}</div>
-                {hasData && (
-                  <div className="mono fw-bold" style={{ color: textColor, fontSize: '0.85rem', textAlign: 'right' }}>
-                    {isPositive ? '+' : ''}${cell.data!.pnl.toFixed(2)}
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '0.5rem' }}>
+          <div style={{ minWidth: '600px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
+              {getCalendarGrid().map((cell, idx) => {
+                if (!cell) return <div key={idx} style={{ padding: '2rem', backgroundColor: 'transparent' }}></div>;
+                
+                const hasData = cell.data && cell.data.trades.length > 0;
+                const isPositive = cell.data && cell.data.pnl >= 0;
+                const bgColor = !hasData ? 'var(--surface-light)' : (isPositive ? 'rgba(0, 224, 84, 0.1)' : 'rgba(255, 69, 58, 0.1)');
+                const textColor = !hasData ? 'var(--text-muted)' : (isPositive ? 'var(--accent)' : 'var(--danger)');
+                
+                return (
+                  <div 
+                    key={idx} 
+                    onClick={() => hasData && setSelectedDate(cell.date)}
+                    style={{ 
+                      backgroundColor: bgColor, 
+                      borderRadius: '8px', 
+                      padding: '0.75rem', 
+                      minHeight: '80px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      cursor: hasData ? 'pointer' : 'default',
+                      transition: 'transform 150ms ease'
+                    }}
+                    className={hasData ? 'hover-scale' : ''}
+                  >
+                    <div style={{ color: 'var(--text-main)', fontWeight: 'bold', fontSize: '0.9rem' }}>{cell.day}</div>
+                    {hasData && (
+                      <div className="mono fw-bold" style={{ color: textColor, fontSize: '0.85rem', textAlign: 'right' }}>
+                        {isPositive ? '+' : ''}${cell.data!.pnl.toFixed(2)}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -526,7 +538,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
           ></div>
           <div 
             className="animate-slide-up" // Using slide up for now, could be slide-left if we had keyframes for it
-            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', backgroundColor: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 101, padding: '2rem', overflowY: 'auto' }}
+            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '400px', backgroundColor: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 101, padding: '2rem', overflowY: 'auto' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
               <h3>Trades on {selectedDate}</h3>

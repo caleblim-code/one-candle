@@ -272,6 +272,43 @@ input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+
+  /* Stack grids on mobile */
+  .grid-responsive-2, .grid-responsive-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Table cards on mobile */
+  .table-mobile-cards, .table-mobile-cards tbody, .table-mobile-cards tr, .table-mobile-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-mobile-cards thead {
+    display: none;
+  }
+  .table-mobile-cards tr {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px;
+    background: var(--surface-light);
+    padding: 0.5rem;
+  }
+  .table-mobile-cards td {
+    border: none !important;
+    padding: 0.5rem !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+  }
+  .table-mobile-cards td::before {
+    content: attr(data-label);
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-right: 1rem;
+    text-align: left;
+  }
 }
 
 @media (min-width: 769px) {

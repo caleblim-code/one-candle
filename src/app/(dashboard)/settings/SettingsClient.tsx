@@ -198,7 +198,7 @@ export default function SettingsClient({ user }: { user: any }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border)', marginBottom: '2rem', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid var(--border)', marginBottom: '2rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <button onClick={() => setActiveTab('profile')} style={tabStyle('profile')}>Profile</button>
         <button onClick={() => setActiveTab('accounts')} style={tabStyle('accounts')}>Portfolios</button>
         <button onClick={() => setActiveTab('preferences')} style={tabStyle('preferences')}>Trading Preferences</button>
@@ -244,7 +244,7 @@ export default function SettingsClient({ user }: { user: any }) {
             <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Create and manage multiple accounts. Your dashboard and journal can be filtered by these accounts.</p>
             
             {accounts.length > 0 ? (
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
+              <table className="table-mobile-cards" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
                     <th style={{ padding: '0.75rem 0' }}>Account Name</th>
@@ -257,12 +257,12 @@ export default function SettingsClient({ user }: { user: any }) {
                   {accounts.map(acc => (
                     <Fragment key={acc.id}>
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '1rem 0', fontWeight: 'bold' }}>
+                        <td data-label="Account Name" style={{ padding: '1rem 0', fontWeight: 'bold' }}>
                           {editingAccountId === acc.id ? (
                             <input type="text" className="form-input" style={{ padding: '0.25rem', fontSize: '0.9rem' }} value={editingAccountData.name} onChange={e => setEditingAccountData({...editingAccountData, name: e.target.value})} />
                           ) : acc.name}
                         </td>
-                        <td style={{ padding: '1rem 0' }}>
+                        <td data-label="Type" style={{ padding: '1rem 0' }}>
                           {editingAccountId === acc.id ? (
                             <select className="form-select" style={{ padding: '0.25rem', fontSize: '0.9rem' }} value={editingAccountData.type} onChange={e => setEditingAccountData({...editingAccountData, type: e.target.value})}>
                               <option>Live Personal</option>
@@ -275,14 +275,14 @@ export default function SettingsClient({ user }: { user: any }) {
                             <span className="badge">{acc.type}</span>
                           )}
                         </td>
-                        <td style={{ padding: '1rem 0' }} className="mono">
+                        <td data-label="Starting Balance" style={{ padding: '1rem 0' }} className="mono">
                           {editingAccountId === acc.id ? (
                             <input type="number" className="form-input mono" style={{ padding: '0.25rem', fontSize: '0.9rem', width: '100px' }} value={editingAccountData.balance} onChange={e => setEditingAccountData({...editingAccountData, balance: parseFloat(e.target.value) || 0})} />
                           ) : (
                             `$${acc.balance.toFixed(2)}`
                           )}
                         </td>
-                        <td style={{ padding: '1rem 0', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <td data-label="Actions" style={{ padding: '1rem 0', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
                           {editingAccountId === acc.id ? (
                             <>
                               <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={handleSaveAccount} disabled={loading}>Save</button>
@@ -314,7 +314,7 @@ export default function SettingsClient({ user }: { user: any }) {
                                 <button key={name} type="button" className="btn btn-ghost" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', marginRight: '0.5rem', border: '1px solid var(--border)' }} onClick={() => setRulesFormData(preset)}>{name}</button>
                               ))}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                            <div className="grid-responsive-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                               <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">Firm Name</label>
                                 <input type="text" className="form-input" value={rulesFormData.firmName || ''} onChange={e => setRulesFormData({...rulesFormData, firmName: e.target.value})} />
@@ -359,7 +359,7 @@ export default function SettingsClient({ user }: { user: any }) {
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
               <h4 style={{ marginBottom: '1rem' }}>Add New Account</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+              <div className="grid-responsive-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Name (e.g. Apex 50k)</label>
                   <input type="text" className="form-input" value={newAccount.name} onChange={e => setNewAccount({...newAccount, name: e.target.value})} />
@@ -438,7 +438,7 @@ export default function SettingsClient({ user }: { user: any }) {
       )}
 
       {activeTab === 'tags' && (
-        <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div className="animate-fade-in grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
           <div className="card">
             <h3 style={{ marginBottom: '0.5rem' }}>Setup Tags</h3>
             <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Tags used to identify your specific trading strategies or setups.</p>
@@ -487,7 +487,7 @@ export default function SettingsClient({ user }: { user: any }) {
             <h3 style={{ marginBottom: '0.5rem' }}>Export My Data</h3>
             <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Download all of your trade data as a CSV or JSON file. This export includes every trade across all accounts, with full details including entry/exit dates, prices, P&L, setup tags, mistakes, playbook, and journal notes.</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
               {/* CSV Export */}
               <div style={{ padding: '1.5rem', backgroundColor: 'var(--surface-light)', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textAlign: 'center' }}>
                 <div style={{ width: '50px', height: '50px', borderRadius: '12px', backgroundColor: 'rgba(0, 210, 75, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>

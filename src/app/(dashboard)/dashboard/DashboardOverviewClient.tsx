@@ -88,7 +88,7 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
           <h3>Recent Trades</h3>
           <Link href="/journal" style={{ color: 'var(--accent)', fontSize: '0.9rem', fontWeight: '600' }}>View All &rarr;</Link>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="table-mobile-cards" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               <th style={{ padding: '0.75rem 0' }}>Ticker</th>
@@ -100,14 +100,14 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
           <tbody>
             {recentTrades.map((t: any) => (
               <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '1rem 0' }} className="mono fw-bold">{t.ticker.toUpperCase()}</td>
-                <td style={{ padding: '1rem 0' }}>
+                <td data-label="Ticker" style={{ padding: '1rem 0' }} className="mono fw-bold">{t.ticker.toUpperCase()}</td>
+                <td data-label="Dir" style={{ padding: '1rem 0' }}>
                   <span className={`badge ${t.direction === 'Long' ? 'win' : 'loss'}`}>{t.direction}</span>
                 </td>
-                <td style={{ padding: '1rem 0' }} className={`mono ${t.pnl && t.pnl >= 0 ? 'text-accent' : t.pnl && t.pnl < 0 ? 'text-danger' : ''}`}>
+                <td data-label="P&L" style={{ padding: '1rem 0' }} className={`mono ${t.pnl && t.pnl >= 0 ? 'text-accent' : t.pnl && t.pnl < 0 ? 'text-danger' : ''}`}>
                   {t.pnl !== null ? `${t.pnl >= 0 ? '+' : ''}$${Math.abs(t.pnl).toFixed(2)}` : '--'}
                 </td>
-                <td style={{ padding: '1rem 0', color: 'var(--text-muted)' }}>{new Date(t.entryDate).toLocaleDateString()}</td>
+                <td data-label="Date" style={{ padding: '1rem 0', color: 'var(--text-muted)' }}>{new Date(t.entryDate).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>

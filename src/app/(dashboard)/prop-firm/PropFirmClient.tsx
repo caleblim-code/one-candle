@@ -170,7 +170,7 @@ export default function PropFirmClient({ accounts, initialAccountId }: { account
       <h3 style={{ marginBottom: '1rem', marginTop: '3rem' }}>Payout History</h3>
       <div className="card">
         {payouts.length > 0 ? (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table className="table-mobile-cards" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '0.75rem 0' }}>Date</th>
@@ -182,10 +182,10 @@ export default function PropFirmClient({ accounts, initialAccountId }: { account
             <tbody>
               {payouts.map((p: any) => (
                 <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '1rem 0' }}>{new Date(p.date).toLocaleDateString()}</td>
-                  <td style={{ padding: '1rem 0', fontWeight: 'bold', color: 'var(--accent)' }} className="mono">${p.amount.toFixed(2)}</td>
-                  <td style={{ padding: '1rem 0' }}>{p.method || 'N/A'}</td>
-                  <td style={{ padding: '1rem 0' }}>
+                  <td data-label="Date" style={{ padding: '1rem 0' }}>{new Date(p.date).toLocaleDateString()}</td>
+                  <td data-label="Amount" style={{ padding: '1rem 0', fontWeight: 'bold', color: 'var(--accent)' }} className="mono">${p.amount.toFixed(2)}</td>
+                  <td data-label="Method" style={{ padding: '1rem 0' }}>{p.method || 'N/A'}</td>
+                  <td data-label="Status" style={{ padding: '1rem 0' }}>
                     <span className={`badge ${p.status === 'Paid' ? 'win' : p.status === 'Rejected' ? 'loss' : ''}`}>{p.status}</span>
                   </td>
                 </tr>

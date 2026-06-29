@@ -72,7 +72,7 @@ export default function PlaybooksClient({ initialPlaybooks }: { initialPlaybooks
         <div className="card animate-slide-up" style={{ marginBottom: '2rem' }}>
           <h3 style={{ marginBottom: '1.5rem' }}>New Playbook Strategy</h3>
           <form onSubmit={handleAdd}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
               <div>
                 <div className="form-group">
                   <label className="form-label">Strategy Name</label>

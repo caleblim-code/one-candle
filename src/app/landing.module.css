@@ -501,11 +501,12 @@
     background-color: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     margin-top: 1rem;
 }
 
-.ldTable { width: 100%; border-collapse: collapse; }
+.ldTable { width: 100%; min-width: 500px; border-collapse: collapse; }
 .ldTable th, .ldTable td {
     padding: 1rem;
     text-align: left;

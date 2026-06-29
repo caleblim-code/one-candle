@@ -83,11 +83,11 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             type="text" 
             placeholder="Search ticker..." 
             className="form-input" 
-            style={{ width: '200px' }} 
+            style={{ flex: '1 1 200px' }} 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
           />
-          <select className="form-select" style={{ width: '150px' }} value={filterAsset} onChange={e => setFilterAsset(e.target.value)}>
+          <select className="form-select" style={{ flex: '1 1 120px' }} value={filterAsset} onChange={e => setFilterAsset(e.target.value)}>
             <option value="All">All Assets</option>
             <option value="Stocks">Stocks</option>
             <option value="Options">Options</option>
@@ -95,7 +95,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             <option value="Futures">Futures</option>
             <option value="Crypto">Crypto</option>
           </select>
-          <select className="form-select" style={{ width: '150px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <select className="form-select" style={{ flex: '1 1 120px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="All">All Statuses</option>
             <option value="Open">Open</option>
             <option value="Closed">Closed</option>
@@ -105,7 +105,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-responsive">
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+          <table className="table-mobile-cards" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', backgroundColor: 'var(--surface-light)' }}>
               <th style={{ padding: '1rem' }}>Date</th>
@@ -127,16 +127,16 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                   onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--surface-light)'}
                   onMouseOut={e => e.currentTarget.style.backgroundColor = expandedId === trade.id ? 'var(--surface-light)' : 'transparent'}
                 >
-                  <td style={{ padding: '1rem' }}>{new Date(trade.entryDate).toLocaleDateString()}</td>
-                  <td style={{ padding: '1rem' }} className="mono fw-bold">{trade.ticker.toUpperCase()}</td>
-                  <td style={{ padding: '1rem' }}><span className={`badge ${trade.direction === 'Long' ? 'win' : 'loss'}`}>{trade.direction}</span></td>
-                  <td style={{ padding: '1rem' }} className="mono">${trade.entryPrice.toFixed(2)}</td>
-                  <td style={{ padding: '1rem' }} className="mono">{trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : '--'}</td>
-                  <td style={{ padding: '1rem' }} className="mono">{trade.positionSize}</td>
-                  <td style={{ padding: '1rem' }} className={`mono ${trade.pnl && trade.pnl >= 0 ? 'text-accent' : trade.pnl && trade.pnl < 0 ? 'text-danger' : ''}`}>
+                  <td data-label="Date" style={{ padding: '1rem' }}>{new Date(trade.entryDate).toLocaleDateString()}</td>
+                  <td data-label="Ticker" style={{ padding: '1rem' }} className="mono fw-bold">{trade.ticker.toUpperCase()}</td>
+                  <td data-label="Direction" style={{ padding: '1rem' }}><span className={`badge ${trade.direction === 'Long' ? 'win' : 'loss'}`}>{trade.direction}</span></td>
+                  <td data-label="Entry" style={{ padding: '1rem' }} className="mono">${trade.entryPrice.toFixed(2)}</td>
+                  <td data-label="Exit" style={{ padding: '1rem' }} className="mono">{trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : '--'}</td>
+                  <td data-label="Size" style={{ padding: '1rem' }} className="mono">{trade.positionSize}</td>
+                  <td data-label="P&L" style={{ padding: '1rem' }} className={`mono ${trade.pnl && trade.pnl >= 0 ? 'text-accent' : trade.pnl && trade.pnl < 0 ? 'text-danger' : ''}`}>
                     {trade.pnl !== null ? `${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}` : '--'}
                   </td>
-                  <td style={{ padding: '1rem' }}><span style={{ color: trade.status === 'Open' ? 'var(--accent)' : 'var(--text-muted)' }}>{trade.status}</span></td>
+                  <td data-label="Status" style={{ padding: '1rem' }}><span style={{ color: trade.status === 'Open' ? 'var(--accent)' : 'var(--text-muted)' }}>{trade.status}</span></td>
                 </tr>
                 {expandedId === trade.id && (
                   <tr>
@@ -145,7 +145,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
                         <div>
                           <h4 style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Trade Details</h4>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div><span className="text-muted">Broker Trade ID:</span> <span className="mono">{trade.brokerTradeId || '--'}</span></div>
                             <div><span className="text-muted">Asset Class:</span> {trade.assetClass}</div>
                             <div><span className="text-muted">Entry Time:</span> {new Date(trade.entryDate).toLocaleTimeString()}</div>
@@ -174,6 +174,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                             {trade.notes || 'No notes provided.'}
                           </p>
                           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                            <Link href={`/edit-trade/${trade.id}`} className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>Edit</Link>
                             <button className="btn btn-danger" onClick={() => confirmDelete(trade.id)} style={{ padding: '0.5rem 1rem' }}>Delete</button>
                           </div>
                         </div>

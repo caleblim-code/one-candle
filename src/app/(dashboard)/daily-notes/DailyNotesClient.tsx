@@ -63,7 +63,7 @@ export default function DailyNotesClient({ initialJournals, initialTrades }: { i
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+      <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
         
         {/* Editor Side */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>

@@ -126,7 +126,7 @@ export default function AddTradePage() {
             }).catch(() => {}); // silently fail individual image uploads for now
           }
         }
-        mutate(key => typeof key === 'string' && key.startsWith('/api/trades'), undefined, { revalidate: true });
+        mutate(key => typeof key === 'string' && (key.startsWith('/api/trades') || key.startsWith('/api/analytics') || key.startsWith('/api/dashboard')), undefined, { revalidate: true });
         router.refresh();
         router.push('/journal');
       } else {
@@ -176,7 +176,7 @@ export default function AddTradePage() {
         <div className="card animate-fade-in" style={{ padding: '2rem' }}>
           <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Trading Account</label>
                 <select name="accountId" className="form-select" value={formData.accountId} onChange={handleChange} required>
@@ -234,7 +234,7 @@ export default function AddTradePage() {
             </div>
 
             <h3 style={{ margin: '2rem 0 1rem', fontSize: '1.1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Pricing & Execution</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+            <div className="grid-responsive-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Entry Price</label>
                 <input required type="number" step="any" name="entryPrice" className="form-input mono" style={!formData.entryPrice ? { borderColor: 'var(--danger)' } : {}} value={formData.entryPrice} onChange={handleChange} />
@@ -273,7 +273,7 @@ export default function AddTradePage() {
             </div>
 
             <h3 style={{ margin: '2rem 0 1rem', fontSize: '1.1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Journaling</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Setup Tag</label>
                 <select name="setupTag" className="form-select" value={formData.setupTag} onChange={handleChange}>

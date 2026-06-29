@@ -1,0 +1,378 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { mutate } from 'swr';
+
+export default function EditTradePage() {
+  const params = useParams();
+  const tradeId = params.id as string;
+  const router = useRouter();
+
+  const [playbooks, setPlaybooks] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [setupTagsList, setSetupTagsList] = useState<string[]>(['Breakout', 'Pullback', 'Reversal']);
+  const [mistakeTagsList, setMistakeTagsList] = useState<string[]>(['FOMO', 'Revenge Trading', 'Chasing', 'Hesitation']);
+  const [defaultAsset, setDefaultAsset] = useState('Stocks');
+
+  const [formData, setFormData] = useState({
+    ticker: '',
+    assetClass: 'Stocks',
+    direction: 'Long',
+    entryPrice: '',
+    exitPrice: '',
+    positionSize: '',
+    entryDate: new Date().toISOString().slice(0, 16),
+    exitDate: '',
+    stopLoss: '',
+    takeProfit: '',
+    fees: '0',
+    status: 'Closed',
+    setupTag: '',
+    playbookId: '',
+    accountId: '',
+    mistakeTags: '',
+    notes: '',
+    brokerTradeId: '',
+    pnl: ''
+  });
+  
+  const [images, setImages] = useState<File[]>([]);
+  const [livePnl, setLivePnl] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/playbooks').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setPlaybooks(data);
+    }).catch(() => {});
+
+    fetch('/api/accounts').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        setAccounts(data);
+      }
+    }).catch(() => {});
+    
+    fetch('/api/user/settings').then(r => r.json()).then(data => {
+      if (data) {
+        if (data.setupTags) setSetupTagsList(JSON.parse(data.setupTags));
+        if (data.mistakeTags) setMistakeTagsList(JSON.parse(data.mistakeTags));
+        if (data.defaultAsset) {
+          setDefaultAsset(data.defaultAsset);
+        }
+      }
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (tradeId) {
+      fetch(`/api/trades/${tradeId}`).then(r => r.json()).then(data => {
+        if (data.success && data.trade) {
+          const t = data.trade;
+          setFormData({
+            ticker: t.ticker || '',
+            assetClass: t.assetClass || 'Stocks',
+            direction: t.direction || 'Long',
+            entryPrice: t.entryPrice?.toString() || '',
+            exitPrice: t.exitPrice?.toString() || '',
+            positionSize: t.positionSize?.toString() || '',
+            entryDate: t.entryDate ? new Date(t.entryDate).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+            exitDate: t.exitDate ? new Date(t.exitDate).toISOString().slice(0, 16) : '',
+            stopLoss: t.stopLoss?.toString() || '',
+            takeProfit: t.takeProfit?.toString() || '',
+            fees: t.fees?.toString() || '0',
+            status: t.status || 'Closed',
+            setupTag: t.setupTag || '',
+            playbookId: t.playbookId || '',
+            accountId: t.accountId || '',
+            mistakeTags: t.mistakeTags || '',
+            notes: t.notes || '',
+            brokerTradeId: t.brokerTradeId || '',
+            pnl: t.pnl?.toString() || ''
+          });
+        }
+      }).catch(err => setError('Failed to load trade'));
+    }
+  }, [tradeId]);
+
+  // Live P&L Calc
+  useEffect(() => {
+    if (formData.entryPrice && formData.exitPrice && formData.positionSize) {
+      const entry = parseFloat(formData.entryPrice);
+      const exit = parseFloat(formData.exitPrice);
+      const size = parseFloat(formData.positionSize);
+      const fees = parseFloat(formData.fees || '0');
+      
+      let pnl = 0;
+      if (formData.direction === 'Long') {
+        pnl = (exit - entry) * size - fees;
+      } else {
+        pnl = (entry - exit) * size - fees;
+      }
+      setLivePnl(pnl);
+    } else {
+      setLivePnl(null);
+    }
+  }, [formData.entryPrice, formData.exitPrice, formData.positionSize, formData.fees, formData.direction]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`/api/trades/${tradeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          pnl: formData.pnl ? parseFloat(formData.pnl) : (livePnl !== null ? livePnl : null),
+          entryDate: new Date(formData.entryDate).toISOString(),
+          exitPrice: formData.status === 'Open' ? null : formData.exitPrice,
+          exitDate: formData.status === 'Open' || !formData.exitDate ? null : new Date(formData.exitDate).toISOString(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.trade) {
+        // Handle images logic here if needed for edits in future
+        mutate(key => typeof key === 'string' && (key.startsWith('/api/trades') || key.startsWith('/api/analytics')), undefined, { revalidate: true });
+        router.refresh();
+        router.push('/journal');
+      } else {
+        setError(data.error || 'Failed to update trade');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2>Edit Trade</h2>
+      </div>
+      
+      {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
+
+      <div className="trade-grid">
+      <div className="card animate-fade-in" style={{ padding: '2rem' }}>
+        <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
+        <form onSubmit={handleSubmit}>
+          <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">Trading Account</label>
+              <select name="accountId" className="form-select" value={formData.accountId} onChange={handleChange} required>
+                <option value="" disabled>Select an account</option>
+                {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Ticker / Symbol</label>
+              <input required type="text" name="ticker" className="form-input" value={formData.ticker} onChange={handleChange} placeholder="e.g. AAPL" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Broker Trade ID (Optional)</label>
+              <input type="text" name="brokerTradeId" className="form-input" value={formData.brokerTradeId} onChange={handleChange} placeholder="e.g. #352254083" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Asset Class</label>
+              <select name="assetClass" className="form-select" value={formData.assetClass} onChange={handleChange}>
+                <option>Stocks</option>
+                <option>Options</option>
+                <option>Forex</option>
+                <option>Futures</option>
+                <option>Crypto</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Direction</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type="button" onClick={() => setFormData({...formData, direction: 'Long'})} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: formData.direction === 'Long' ? '1px solid var(--accent)' : '1px solid var(--border)', backgroundColor: formData.direction === 'Long' ? 'rgba(0, 224, 84, 0.1)' : 'transparent', color: formData.direction === 'Long' ? 'var(--accent)' : 'var(--text-main)', cursor: 'pointer', fontWeight: 600 }}>Long</button>
+                <button type="button" onClick={() => setFormData({...formData, direction: 'Short'})} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: formData.direction === 'Short' ? '1px solid var(--danger)' : '1px solid var(--border)', backgroundColor: formData.direction === 'Short' ? 'rgba(255, 69, 58, 0.1)' : 'transparent', color: formData.direction === 'Short' ? 'var(--danger)' : 'var(--text-main)', cursor: 'pointer', fontWeight: 600 }}>Short</button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select name="status" className="form-select" value={formData.status} onChange={handleChange}>
+                <option>Open</option>
+                <option>Closed</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Entry Date & Time</label>
+              <input required type="datetime-local" name="entryDate" className="form-input" value={formData.entryDate} onChange={handleChange} />
+            </div>
+
+            {formData.status === 'Closed' && (
+              <div className="form-group">
+                <label className="form-label">Exit Date & Time</label>
+                <input required type="datetime-local" name="exitDate" className="form-input" value={formData.exitDate} onChange={handleChange} />
+              </div>
+            )}
+          </div>
+
+          <h3 style={{ margin: '2rem 0 1rem', fontSize: '1.1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Pricing & Execution</h3>
+          <div className="grid-responsive-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Entry Price</label>
+              <input required type="number" step="any" name="entryPrice" className="form-input mono" style={!formData.entryPrice ? { borderColor: 'var(--danger)' } : {}} value={formData.entryPrice} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Position Size (Shares / Lots)</label>
+              <input required type="number" step="any" name="positionSize" className="form-input mono" style={!formData.positionSize ? { borderColor: 'var(--danger)' } : {}} value={formData.positionSize} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Fees / Swap</label>
+              <input type="number" step="any" name="fees" className="form-input mono" value={formData.fees} onChange={handleChange} />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Realized P&L ($)</label>
+              <input type="number" step="any" name="pnl" className="form-input mono" value={formData.pnl} onChange={handleChange} placeholder={livePnl !== null ? `Auto-calculated: $${livePnl.toFixed(2)}` : "e.g. 43.10"} />
+              <span className="text-muted" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                Leave blank to use auto-calculated P&L.
+              </span>
+            </div>
+
+            {formData.status === 'Closed' && (
+              <div className="form-group">
+                <label className="form-label">Exit Price</label>
+                <input required type="number" step="any" name="exitPrice" className="form-input mono" style={formData.status === 'Closed' && !formData.exitPrice ? { borderColor: 'var(--danger)' } : {}} value={formData.exitPrice} onChange={handleChange} />
+              </div>
+            )}
+            <div className="form-group">
+              <label className="form-label">Stop Loss (Optional)</label>
+              <input type="number" step="any" name="stopLoss" className="form-input mono" value={formData.stopLoss} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Take Profit (Optional)</label>
+              <input type="number" step="any" name="takeProfit" className="form-input mono" value={formData.takeProfit} onChange={handleChange} />
+            </div>
+          </div>
+
+          <h3 style={{ margin: '2rem 0 1rem', fontSize: '1.1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Journaling</h3>
+          <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Setup Tag</label>
+              <select name="setupTag" className="form-select" value={formData.setupTag} onChange={handleChange}>
+                <option value="">None</option>
+                {setupTagsList.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Playbook</label>
+              <select name="playbookId" className="form-select" value={formData.playbookId} onChange={handleChange}>
+                <option value="">No Playbook</option>
+                {playbooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Mistake Tags</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {mistakeTagsList.map(tag => {
+                const isSelected = formData.mistakeTags.includes(tag);
+                return (
+                  <button 
+                    key={tag} 
+                    type="button"
+                    onClick={() => {
+                      let currentTags = formData.mistakeTags ? formData.mistakeTags.split(',').map(s => s.trim()).filter(Boolean) : [];
+                      if (currentTags.includes(tag)) {
+                        currentTags = currentTags.filter(t => t !== tag);
+                      } else {
+                        currentTags.push(tag);
+                      }
+                      setFormData({ ...formData, mistakeTags: currentTags.join(', ') });
+                    }}
+                    className="badge"
+                    style={{ 
+                      border: isSelected ? '1px solid var(--danger)' : '1px solid var(--border)',
+                      backgroundColor: isSelected ? 'rgba(239, 68, 68, 0.1)' : 'var(--surface-light)',
+                      color: isSelected ? 'var(--danger)' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '0.5rem 0.75rem',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Notes</label>
+            <textarea name="notes" className="form-textarea" value={formData.notes} onChange={handleChange} placeholder="What was your reasoning? How did you feel?"></textarea>
+          </div>
+
+          <div style={{ marginTop: '2rem' }}>
+            <button type="submit" className="btn btn-primary" style={{ position: 'relative' }} disabled={loading}>
+              {loading ? <span className="spinner"></span> : null}
+              {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+        </fieldset>
+      </div>
+
+      {/* Live P&L Sidebar */}
+      <div>
+        <div className="card" style={{ position: 'sticky', top: '2rem' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Live Preview</h3>
+          
+          <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span className="text-muted">Net P&L</span>
+            {(() => {
+              const displayPnl = formData.pnl ? parseFloat(formData.pnl) : livePnl;
+              return (
+                <span className={`mono ${displayPnl === null ? '' : displayPnl >= 0 ? 'text-accent' : 'text-danger'}`} style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                  {displayPnl === null ? '--' : `${displayPnl >= 0 ? '+' : ''}$${displayPnl.toFixed(2)}`}
+                </span>
+              );
+            })()}
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--border)', margin: '1.5rem 0' }}></div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+            <span className="text-muted">Ticker</span>
+            <span className="mono">{formData.ticker.toUpperCase() || '--'}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+            <span className="text-muted">Direction</span>
+            <span>{formData.direction}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+            <span className="text-muted">Status</span>
+            <span className={formData.status === 'Open' ? 'text-accent' : ''}>{formData.status}</span>
+          </div>
+        </div>
+      </div>
+      </div>
+      <style jsx>{`
+        .trade-grid {
+          display: grid;
+          grid-template-columns: 1fr 300px;
+          gap: 2rem;
+        }
+        @media (max-width: 768px) {
+          .trade-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
