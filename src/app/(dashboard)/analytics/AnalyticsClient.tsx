@@ -15,6 +15,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
   const [filterAsset, setFilterAsset] = useState('All');
   const [filterSetup, setFilterSetup] = useState('All');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarViewDate, setCalendarViewDate] = useState(new Date());
 
   const initialTrades = data?.trades || [];
   const initialJournals = data?.journals || [];
@@ -197,9 +198,17 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
   }, [trades, initialJournals]);
 
   // Calendar grouping
+  const calendarTrades = useMemo(() => {
+    return initialTrades.filter((t: any) => {
+      if (filterAsset !== 'All' && t.assetClass !== filterAsset) return false;
+      if (filterSetup !== 'All' && t.setupTag !== filterSetup) return false;
+      return true;
+    });
+  }, [initialTrades, filterAsset, filterSetup]);
+
   const calendarData = useMemo(() => {
     const map = new Map<string, { pnl: number, trades: any[] }>();
-    trades.forEach((t: any) => {
+    calendarTrades.forEach((t: any) => {
       const dString = new Date(t.entryDate).toISOString().split('T')[0];
       const existing = map.get(dString) || { pnl: 0, trades: [] };
       existing.pnl += (t.pnl || 0);
@@ -207,24 +216,63 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
       map.set(dString, existing);
     });
     return map;
-  }, [trades]);
+  }, [calendarTrades]);
 
   const getCalendarGrid = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
     
-    const firstDay = new Date(year, month, 1).getDay();
+    let firstDay = new Date(year, month, 1).getDay();
+    if (firstDay === 0) firstDay = 7; 
+    
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
     
     const grid = [];
-    for (let i = 0; i < firstDay; i++) grid.push(null);
+    
+    const prevPadding = firstDay - 1; 
+    for (let i = prevPadding; i > 0; i--) {
+      const pDay = prevMonthDays - i + 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      const prevMonth = month === 0 ? 12 : month;
+      const dStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(pDay).padStart(2, '0')}`;
+      grid.push({ date: dStr, day: pDay, data: null, isCurrentMonth: false });
+    }
+    
     for (let i = 1; i <= daysInMonth; i++) {
       const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      grid.push({ date: dStr, day: i, data: calendarData.get(dStr) });
+      grid.push({ date: dStr, day: i, data: calendarData.get(dStr) || null, isCurrentMonth: true });
+    }
+    
+    const remainder = grid.length % 7;
+    if (remainder !== 0) {
+      const nextPadding = 7 - remainder;
+      for (let i = 1; i <= nextPadding; i++) {
+        const nextYear = month === 11 ? year + 1 : year;
+        const nextMonth = month === 11 ? 1 : month + 2;
+        const dStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        grid.push({ date: dStr, day: i, data: null, isCurrentMonth: false });
+      }
     }
     return grid;
   };
+
+  const calendarMonthlyStats = useMemo(() => {
+    let pnl = 0;
+    let daysWithTrades = 0;
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const dayData = calendarData.get(dStr);
+      if (dayData && dayData.trades.length > 0) {
+        daysWithTrades++;
+        pnl += dayData.pnl;
+      }
+    }
+    return { pnl, daysWithTrades };
+  }, [calendarData, calendarViewDate]);
 
   const COLORS = ['#00E054', '#FF453A'];
 
@@ -478,46 +526,85 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
         </div>
       </div>
 
-      {/* Calendar View */}
-      <div className="card">
-        <h3 style={{ marginBottom: '1.5rem' }}>Calendar View</h3>
-        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '0.5rem' }}>
-          <div style={{ minWidth: '600px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <div key={d} style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>{d}</div>
+      {/* Calendar View (FTMO Style) */}
+      <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+        {/* Calendar Header Top Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button className="btn btn-ghost" style={{ border: '1px solid var(--border)', padding: '0.4rem 1rem' }} onClick={() => setCalendarViewDate(new Date())}>Today</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button className="btn btn-ghost" style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border)' }} onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}>
+                &lt;
+              </button>
+              <h3 style={{ margin: '0 1rem', minWidth: '130px', textAlign: 'center' }}>
+                {calendarViewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </h3>
+              <button className="btn btn-ghost" style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border)' }} onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1))}>
+                &gt;
+              </button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.9rem' }}>
+            <span className="text-muted fw-bold">Monthly stats:</span>
+            <span className="mono fw-bold" style={{ backgroundColor: calendarMonthlyStats.pnl >= 0 ? '#e4f6ed' : '#fbe4e6', color: calendarMonthlyStats.pnl >= 0 ? '#00c853' : '#ff3b30', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+              {calendarMonthlyStats.pnl >= 0 ? '+' : ''}${calendarMonthlyStats.pnl.toFixed(2)}
+            </span>
+            <span className="text-muted" style={{ backgroundColor: 'var(--surface-light)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+              Trading days: {calendarMonthlyStats.daysWithTrades}
+            </span>
+          </div>
+        </div>
+
+        {/* Calendar Grid */}
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ minWidth: '800px', backgroundColor: 'var(--surface)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid var(--border)' }}>
+              {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(d => (
+                <div key={d} style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted)', fontSize: '0.8rem', borderRight: '1px solid var(--border)' }}>{d}</div>
               ))}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
               {getCalendarGrid().map((cell, idx) => {
-                if (!cell) return <div key={idx} style={{ padding: '2rem', backgroundColor: 'transparent' }}></div>;
-                
-                const hasData = cell.data && cell.data.trades.length > 0;
+                // Ensure local time matches the date logic
+                const t = new Date();
+                const todayStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+                const isToday = cell.date === todayStr;
+                const hasData = cell.isCurrentMonth && cell.data && cell.data.trades.length > 0;
                 const isPositive = cell.data && cell.data.pnl >= 0;
-                const bgColor = !hasData ? 'var(--surface-light)' : (isPositive ? 'rgba(0, 224, 84, 0.1)' : 'rgba(255, 69, 58, 0.1)');
-                const textColor = !hasData ? 'var(--text-muted)' : (isPositive ? 'var(--accent)' : 'var(--danger)');
                 
+                let cellClass = 'calendar-cell-empty';
+                if (!cell.isCurrentMonth) cellClass = 'calendar-cell-inactive';
+                else if (hasData) cellClass = isPositive ? 'calendar-cell-success' : 'calendar-cell-danger';
+
                 return (
                   <div 
                     key={idx} 
                     onClick={() => hasData && setSelectedDate(cell.date)}
+                    className={cellClass}
                     style={{ 
-                      backgroundColor: bgColor, 
-                      borderRadius: '8px', 
-                      padding: '0.75rem', 
-                      minHeight: '80px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
+                      minHeight: '120px', 
+                      padding: '0.5rem', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
                       cursor: hasData ? 'pointer' : 'default',
-                      transition: 'transform 150ms ease'
+                      borderRight: '1px solid var(--border)',
+                      borderBottom: '1px solid var(--border)',
+                      opacity: cell.isCurrentMonth ? 1 : 0.5
                     }}
-                    className={hasData ? 'hover-scale' : ''}
                   >
-                    <div style={{ color: 'var(--text-main)', fontWeight: 'bold', fontSize: '0.9rem' }}>{cell.day}</div>
+                    <div style={{ marginBottom: 'auto', padding: '0.2rem' }}>
+                      <span className={isToday ? 'calendar-today-badge' : ''} style={{ fontSize: '0.9rem', color: cell.isCurrentMonth ? 'var(--text-main)' : 'var(--text-muted)', fontWeight: isToday ? 'bold' : 'normal', padding: isToday ? '0' : '0.2rem' }}>
+                        {cell.day}
+                      </span>
+                    </div>
                     {hasData && (
-                      <div className="mono fw-bold" style={{ color: textColor, fontSize: '0.85rem', textAlign: 'right' }}>
-                        {isPositive ? '+' : ''}${cell.data!.pnl.toFixed(2)}
+                      <div style={{ marginTop: '0.5rem', lineHeight: '1.4' }}>
+                        <div className="mono fw-bold" style={{ color: isPositive ? '#00c853' : '#ff3b30', fontSize: '1rem' }}>
+                          {isPositive ? '+' : ''}${cell.data!.pnl.toFixed(2)}
+                        </div>
+                        <div className="text-muted" style={{ fontSize: '0.8rem' }}>
+                          Trades: {cell.data!.trades.length}
+                        </div>
                       </div>
                     )}
                   </div>

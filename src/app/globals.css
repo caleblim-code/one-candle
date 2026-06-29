@@ -316,3 +316,38 @@ input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type
     display: none !important;
   }
 }
+
+/* Calendar Styles (FTMO Style) */
+.calendar-cell-success {
+  background-color: #e4f6ed; /* Soft pastel green */
+  border: 1px solid #f0f0f0;
+}
+.calendar-cell-danger {
+  background-color: #fbe4e6; /* Soft pastel red */
+  border: 1px solid #f0f0f0;
+}
+.calendar-cell-empty {
+  background-color: var(--surface);
+  border: 1px solid #f0f0f0;
+}
+.calendar-cell-inactive {
+  background-color: #fafafa;
+  color: #ccc !important;
+  border: 1px solid #f0f0f0;
+}
+.calendar-grid-container {
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.calendar-today-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #3b82f6;
+  color: white !important;
+  border-radius: 50%;
+  font-weight: bold;
+}
