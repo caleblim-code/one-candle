@@ -93,8 +93,9 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     const avgWin = wins > 0 ? grossProfit / wins : 0;
     const avgLoss = losses > 0 ? grossLoss / losses : 0;
     const avgR = rCount > 0 ? totalR / rCount : 0;
+    const expectancy = (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss;
 
-    return { netPnl, winRate, profitFactor, avgWin, avgLoss, avgR, total: trades.length, largestWin, largestLoss };
+    return { netPnl, winRate, profitFactor, avgWin, avgLoss, avgR, total: trades.length, largestWin, largestLoss, expectancy };
   }, [trades]);
 
   // 3. Chart Data Preparations
@@ -362,6 +363,12 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
           <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Avg R-Multiple</span>
           <span className="mono fw-bold" style={{ fontSize: '1.5rem', color: stats.avgR >= 1 ? 'var(--accent)' : 'var(--text-main)' }}>
             {stats.avgR.toFixed(2)}R
+          </span>
+        </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Expectancy</span>
+          <span className="mono fw-bold" style={{ fontSize: '1.5rem', color: stats.expectancy >= 0 ? 'var(--accent)' : 'var(--danger)' }}>
+            {stats.expectancy >= 0 ? '+' : ''}${stats.expectancy.toFixed(2)}
           </span>
         </div>
         <div className="card" style={statCardStyle}>
