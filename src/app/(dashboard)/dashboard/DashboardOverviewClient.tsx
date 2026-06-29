@@ -12,12 +12,10 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
   const { data, error, isLoading } = useSWR(`/api/dashboard/stats?account=${accountId}`, fetcher);
   const [equityMode, setEquityMode] = useState<'pnl' | 'balance'>('pnl');
 
-  if (error) return <div className="text-danger" style={{ padding: '2rem' }}>Failed to load dashboard data.</div>;
-  if (isLoading) return <DashboardLoading />;
-  
-  if (!data || !data.success) return <DashboardLoading />;
-
-  const { stats, chartData, recentTrades, accountBalance, transactions } = data;
+  // Safely extract data for hooks
+  const chartData = data?.chartData || [];
+  const transactions = data?.transactions || [];
+  const accountBalance = data?.accountBalance || 0;
 
   // Compute account balance chart data
   const balanceChartData = useMemo(() => {
@@ -47,6 +45,12 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
   }, [chartData, transactions, accountBalance]);
 
   const activeChartData = equityMode === 'pnl' ? chartData : balanceChartData;
+
+  if (error) return <div className="text-danger" style={{ padding: '2rem' }}>Failed to load dashboard data.</div>;
+  if (isLoading) return <DashboardLoading />;
+  if (!data || !data.success) return <DashboardLoading />;
+
+  const { stats, recentTrades } = data;
 
   if (stats.totalTrades === 0) {
     return (
