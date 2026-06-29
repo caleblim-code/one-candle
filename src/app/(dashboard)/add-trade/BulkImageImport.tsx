@@ -69,15 +69,25 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
     const tpMatch = text.match(/(?:[Ti]\s*[/\|I1\\]?\s*[PR][:;.]?|ARE)\s*([0-9]+[.,]?[0-9]{0,5})/i);
     if (tpMatch && tpMatch[1] !== '0.00' && tpMatch[1] !== '0') data.takeProfit = tpMatch[1].replace(',', '.');
 
-    // 5. Fees
+    // 5. Fees & Swap
     let totalFees = 0;
+    
+    // In MT5/OCR, Swap/Charges are usually negative when they are a cost, and positive if they are an earning.
+    // Our backend formula is: Net P&L = Gross P&L - Fees.
+    // Therefore, Fees represent a COST.
+    // If Swap is -5.00 (cost), we want Fees to be +5.00.
+    // If Swap is +5.00 (earning), we want Fees to be -5.00.
     const swapMatch = text.match(/Swap[:;]?\s*(-?[0-9.]+)/i);
-    if (swapMatch && !isNaN(parseFloat(swapMatch[1]))) totalFees += Math.abs(parseFloat(swapMatch[1]));
+    if (swapMatch && !isNaN(parseFloat(swapMatch[1]))) {
+      totalFees -= parseFloat(swapMatch[1]);
+    }
     
     const chargeMatch = text.match(/Charges[:;]?\s*(-?[0-9.]+)/i);
-    if (chargeMatch && !isNaN(parseFloat(chargeMatch[1]))) totalFees += Math.abs(parseFloat(chargeMatch[1]));
+    if (chargeMatch && !isNaN(parseFloat(chargeMatch[1]))) {
+      totalFees -= parseFloat(chargeMatch[1]);
+    }
     
-    if (totalFees > 0) {
+    if (totalFees !== 0) {
       data.fees = totalFees.toFixed(2);
     }
 
