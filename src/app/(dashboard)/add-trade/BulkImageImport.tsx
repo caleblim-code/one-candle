@@ -17,6 +17,28 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
   const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
+  const validateRow = (data: any) => {
+    const errors = [];
+    if (!data.ticker) errors.push('Missing Ticker/Direction');
+    if (!data.entryPrice || !data.exitPrice) errors.push('Missing Entry/Exit prices');
+    if (!data.entryDate || !data.exitDate) errors.push('Missing Dates');
+    
+    if (!data.stopLoss) {
+      errors.push('Missing Stop Loss');
+    } else if (data.entryPrice) {
+      const entry = parseFloat(data.entryPrice);
+      const sl = parseFloat(data.stopLoss);
+      if (!isNaN(entry) && !isNaN(sl)) {
+        if (data.direction === 'Long' && sl >= entry) errors.push('Long SL must be < Entry');
+        if (data.direction === 'Short' && sl <= entry) errors.push('Short SL must be > Entry');
+      }
+    }
+    
+    data._errors = errors;
+    data._isValid = errors.length === 0;
+    return data;
+  };
+
   // Extracted parse logic from single ImageImport
   const parseText = (text: string) => {
     const data: any = { status: 'Closed', _isValid: true, _errors: [] };
@@ -42,9 +64,6 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
     if (priceMatch) {
       data.entryPrice = priceMatch[1].replace(',', '.');
       data.exitPrice = priceMatch[2].replace(',', '.');
-    } else {
-      data._isValid = false;
-      data._errors.push('Could not detect Entry/Exit prices');
     }
 
     // 3. Dates
@@ -57,9 +76,6 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
       };
       data.entryDate = formatToLocal(dates[0][1]);
       data.exitDate = formatToLocal(dates[1][1]);
-    } else {
-      data._isValid = false;
-      data._errors.push('Could not detect Dates');
     }
 
     // 4. S/L and T/P
@@ -143,7 +159,7 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
       }
     }
 
-    return data;
+    return validateRow(data);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,6 +276,7 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
   const updateRowField = (index: number, field: string, value: string) => {
     const newRows = [...parsedRows];
     newRows[index][field] = value;
+    newRows[index] = validateRow(newRows[index]);
     setParsedRows(newRows);
   };
 

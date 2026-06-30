@@ -124,6 +124,24 @@ export default function CsvImport({ accounts }: { accounts: any[] }) {
       if (mapping.stopLoss && getVal('stopLoss')) mappedRow.stopLoss = parseFloat(getVal('stopLoss').replace(/[^0-9.-]/g, ''));
       if (mapping.takeProfit && getVal('takeProfit')) mappedRow.takeProfit = parseFloat(getVal('takeProfit').replace(/[^0-9.-]/g, ''));
 
+      // Stop Loss Validation
+      if (!mappedRow.stopLoss) {
+        mappedRow._isValid = false;
+        mappedRow._errors.push('Missing Stop Loss');
+      } else if (mappedRow.entryPrice) {
+        const entry = mappedRow.entryPrice;
+        const sl = mappedRow.stopLoss;
+        if (!isNaN(entry) && !isNaN(sl)) {
+          if (mappedRow.direction === 'Long' && sl >= entry) {
+            mappedRow._isValid = false;
+            mappedRow._errors.push('Long SL must be < Entry');
+          } else if (mappedRow.direction === 'Short' && sl <= entry) {
+            mappedRow._isValid = false;
+            mappedRow._errors.push('Short SL must be > Entry');
+          }
+        }
+      }
+
       return mappedRow;
     });
 
