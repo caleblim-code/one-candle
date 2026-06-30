@@ -142,6 +142,16 @@ export default function CsvImport({ accounts }: { accounts: any[] }) {
         }
       }
 
+      let lastSetup = '';
+      let lastPlaybook = '';
+      try {
+        lastSetup = localStorage.getItem('lastTradeSetupTag') || '';
+        lastPlaybook = localStorage.getItem('lastTradePlaybookId') || '';
+      } catch (e) {}
+
+      mappedRow.setupTag = lastSetup;
+      mappedRow.playbookId = lastPlaybook;
+      
       return mappedRow;
     });
 

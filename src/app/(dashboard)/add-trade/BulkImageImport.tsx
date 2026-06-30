@@ -178,9 +178,16 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
         const { data: { text } } = await worker.recognize(files[i]);
         const parsed = parseText(text);
         
+        let lastSetup = '';
+        let lastPlaybook = '';
+        try {
+          lastSetup = localStorage.getItem('lastTradeSetupTag') || '';
+          lastPlaybook = localStorage.getItem('lastTradePlaybookId') || '';
+        } catch (e) {}
+
         // Initialize extra journaling fields
-        parsed.setupTag = '';
-        parsed.playbookId = '';
+        parsed.setupTag = lastSetup;
+        parsed.playbookId = lastPlaybook;
         parsed.mistakeTags = '';
         parsed.notes = '';
         
@@ -251,6 +258,15 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
         const createdTrade = await res.json();
         
         successCount++;
+      }
+
+      // Save the setup and playbook from the last valid trade imported
+      if (tradesToImport.length > 0) {
+        try {
+          const lastTrade = tradesToImport[tradesToImport.length - 1];
+          if (lastTrade.setupTag) localStorage.setItem('lastTradeSetupTag', lastTrade.setupTag);
+          if (lastTrade.playbookId) localStorage.setItem('lastTradePlaybookId', lastTrade.playbookId);
+        } catch (e) {}
       }
 
       alert(`Success! ${successCount} trades imported.`);
