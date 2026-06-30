@@ -41,6 +41,7 @@ export default function EditTradePage() {
   const [livePnl, setLivePnl] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch('/api/playbooks').then(r => r.json()).then(data => {
@@ -121,8 +122,29 @@ export default function EditTradePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setFieldErrors({});
+
+    // Client-side validation
+    const errors: Record<string, string> = {};
+    if (!formData.ticker.trim()) errors.ticker = 'Ticker is required';
+    if (!formData.entryPrice) errors.entryPrice = 'Entry price is required';
+    if (!formData.positionSize) errors.positionSize = 'Position size is required';
+    if (!formData.entryDate) errors.entryDate = 'Entry date is required';
+    if (!formData.accountId) errors.accountId = 'Please select a trading account';
+    if (formData.status === 'Closed') {
+      if (!formData.exitPrice) errors.exitPrice = 'Exit price is required for closed trades';
+      if (!formData.exitDate) errors.exitDate = 'Exit date is required for closed trades';
+      if (!formData.pnl && livePnl === null && !formData.exitPrice) errors.pnl = 'P&L is required when exit price is missing';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please fill in all required fields highlighted below.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await fetch(`/api/trades/${tradeId}`, {
@@ -251,17 +273,25 @@ export default function EditTradePage() {
                 <input required type="number" step="any" name="exitPrice" className="form-input mono" style={formData.status === 'Closed' && !formData.exitPrice ? { borderColor: 'var(--danger)' } : {}} value={formData.exitPrice} onChange={handleChange} />
               </div>
             )}
-            <div className="form-group">
-              <label className="form-label">Stop Loss (Optional)</label>
-              <input type="number" step="any" name="stopLoss" className="form-input mono" value={formData.stopLoss} onChange={handleChange} />
+              <div className="form-group">
+                <label className="form-label">Stop Loss</label>
+                <input type="number" step="any" name="stopLoss" className="form-input mono" value={formData.stopLoss} onChange={handleChange} style={!formData.stopLoss && formData.status === 'Closed' ? { borderColor: 'var(--warning, #f59e0b)' } : {}} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Take Profit (Optional)</label>
+                <input type="number" step="any" name="takeProfit" className="form-input mono" value={formData.takeProfit} onChange={handleChange} />
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Take Profit (Optional)</label>
-              <input type="number" step="any" name="takeProfit" className="form-input mono" value={formData.takeProfit} onChange={handleChange} />
-            </div>
-          </div>
 
-          <h3 style={{ margin: '2rem 0 1rem', fontSize: '1.1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Journaling</h3>
+            {/* SL reminder for BE or missing SL */}
+            {formData.status === 'Closed' && !formData.stopLoss && (
+              <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '0.75rem 1rem', borderRadius: '8px', marginTop: '1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span><strong>Stop Loss missing.</strong> Even if you closed at breakeven (BE), please enter your <em>original</em> stop loss. Without it, your Avg R-Multiple and risk/reward stats won&apos;t be accurate.</span>
+              </div>
+            )}
+
+            <h3 style={{ margin: '2rem 0 1rem', fontSize: '1.1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>Journaling</h3>
           <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label className="form-label">Setup Tag</label>
