@@ -17,6 +17,10 @@ export default function JournalClient({ accountId }: { accountId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tradeToDelete, setTradeToDelete] = useState<string | null>(null);
+  
+  // Bulk Selection State
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
 
   const { data, error, isLoading, mutate } = useSWR(`/api/trades?account=${accountId}&page=${page}&limit=50`, fetcher);
 
@@ -36,6 +40,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
     return matchesSearch && matchesAsset && matchesStatus;
   });
 
+  // --- Single Delete ---
   const confirmDelete = (id: string) => {
     setTradeToDelete(id);
     setDeleteModalOpen(true);
@@ -64,6 +69,51 @@ export default function JournalClient({ accountId }: { accountId: string }) {
       mutate(); // re-fetch after successful delete to sync
     } catch (err) {
       alert('Failed to delete trade.');
+      mutate(); // rollback on error
+    }
+  };
+
+  // --- Bulk Delete ---
+  const toggleSelectId = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedIds(newSet);
+  };
+
+  const toggleSelectAll = () => {
+    const allIds = filteredTrades.map((t: any) => t.id);
+    const allSelected = allIds.length > 0 && allIds.every((id: string) => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allIds));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const idsToDelete = Array.from(selectedIds);
+    setBulkDeleteModalOpen(false);
+
+    // Optimistic update: immediately remove selected trades from the UI
+    if (data && data.trades) {
+      const idSet = new Set(idsToDelete);
+      mutate(
+        { ...data, trades: data.trades.filter((t: any) => !idSet.has(t.id)) },
+        false
+      );
+    }
+    setSelectedIds(new Set());
+
+    try {
+      // Delete sequentially
+      for (const id of idsToDelete) {
+        const res = await fetch(`/api/trades/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`Failed to delete trade ${id}`);
+      }
+      mutate(); // re-fetch to sync
+    } catch (err) {
+      alert('Some trades failed to delete. Refreshing...');
       mutate(); // rollback on error
     }
   };
@@ -117,6 +167,14 @@ export default function JournalClient({ accountId }: { accountId: string }) {
           <table className="table-mobile-cards" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', backgroundColor: 'var(--surface-light)' }}>
+              <th style={{ padding: '1rem', width: '40px' }}>
+                <input
+                  type="checkbox"
+                  checked={filteredTrades.length > 0 && filteredTrades.every((t: any) => selectedIds.has(t.id))}
+                  onChange={toggleSelectAll}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                />
+              </th>
               <th style={{ padding: '1rem' }}>Entry Date</th>
               <th style={{ padding: '1rem' }}>Exit Date</th>
               <th style={{ padding: '1rem' }}>Ticker</th>
@@ -132,26 +190,33 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             {filteredTrades.map((trade: any) => (
               <React.Fragment key={trade.id}>
                 <tr 
-                  onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}
-                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', backgroundColor: expandedId === trade.id ? 'var(--surface-light)' : 'transparent' }}
-                  onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--surface-light)'}
-                  onMouseOut={e => e.currentTarget.style.backgroundColor = expandedId === trade.id ? 'var(--surface-light)' : 'transparent'}
+                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', backgroundColor: selectedIds.has(trade.id) ? 'rgba(0, 224, 84, 0.05)' : expandedId === trade.id ? 'var(--surface-light)' : 'transparent' }}
+                  onMouseOver={e => e.currentTarget.style.backgroundColor = selectedIds.has(trade.id) ? 'rgba(0, 224, 84, 0.08)' : 'var(--surface-light)'}
+                  onMouseOut={e => e.currentTarget.style.backgroundColor = selectedIds.has(trade.id) ? 'rgba(0, 224, 84, 0.05)' : expandedId === trade.id ? 'var(--surface-light)' : 'transparent'}
                 >
-                  <td data-label="Entry Date" style={{ padding: '1rem' }}>{new Date(trade.entryDate).toLocaleDateString()}</td>
-                  <td data-label="Exit Date" style={{ padding: '1rem' }}>{trade.exitDate ? new Date(trade.exitDate).toLocaleDateString() : '--'}</td>
-                  <td data-label="Ticker" style={{ padding: '1rem' }} className="mono fw-bold">{trade.ticker.toUpperCase()}</td>
-                  <td data-label="Direction" style={{ padding: '1rem' }}><span className={`badge ${trade.direction === 'Long' ? 'win' : 'loss'}`}>{trade.direction}</span></td>
-                  <td data-label="Entry" style={{ padding: '1rem' }} className="mono">${trade.entryPrice.toFixed(2)}</td>
-                  <td data-label="Exit" style={{ padding: '1rem' }} className="mono">{trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : '--'}</td>
-                  <td data-label="Size" style={{ padding: '1rem' }} className="mono">{trade.positionSize}</td>
-                  <td data-label="P&L" style={{ padding: '1rem' }} className={`mono ${trade.pnl && trade.pnl >= 0 ? 'text-accent' : trade.pnl && trade.pnl < 0 ? 'text-danger' : ''}`}>
+                  <td style={{ padding: '1rem', width: '40px' }} onClick={e => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(trade.id)}
+                      onChange={() => toggleSelectId(trade.id)}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                    />
+                  </td>
+                  <td data-label="Entry Date" style={{ padding: '1rem' }} onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>{new Date(trade.entryDate).toLocaleDateString()}</td>
+                  <td data-label="Exit Date" style={{ padding: '1rem' }} onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>{trade.exitDate ? new Date(trade.exitDate).toLocaleDateString() : '--'}</td>
+                  <td data-label="Ticker" style={{ padding: '1rem' }} className="mono fw-bold" onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>{trade.ticker.toUpperCase()}</td>
+                  <td data-label="Direction" style={{ padding: '1rem' }} onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}><span className={`badge ${trade.direction === 'Long' ? 'win' : 'loss'}`}>{trade.direction}</span></td>
+                  <td data-label="Entry" style={{ padding: '1rem' }} className="mono" onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>${trade.entryPrice.toFixed(2)}</td>
+                  <td data-label="Exit" style={{ padding: '1rem' }} className="mono" onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>{trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : '--'}</td>
+                  <td data-label="Size" style={{ padding: '1rem' }} className="mono" onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>{trade.positionSize}</td>
+                  <td data-label="P&L" style={{ padding: '1rem' }} className={`mono ${trade.pnl && trade.pnl >= 0 ? 'text-accent' : trade.pnl && trade.pnl < 0 ? 'text-danger' : ''}`} onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}>
                     {trade.pnl !== null ? `${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}` : '--'}
                   </td>
-                  <td data-label="Status" style={{ padding: '1rem' }}><span style={{ color: trade.status === 'Open' ? 'var(--accent)' : 'var(--text-muted)' }}>{trade.status}</span></td>
+                  <td data-label="Status" style={{ padding: '1rem' }} onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}><span style={{ color: trade.status === 'Open' ? 'var(--accent)' : 'var(--text-muted)' }}>{trade.status}</span></td>
                 </tr>
                 {expandedId === trade.id && (
                   <tr>
-                    <td colSpan={9} style={{ padding: 0 }}>
+                    <td colSpan={10} style={{ padding: 0 }}>
                       <div className="animate-slide-up" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface-light)' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
                         <div>
@@ -232,6 +297,44 @@ export default function JournalClient({ accountId }: { accountId: string }) {
 
       </div>
 
+      {/* Bulk Delete Floating Bar */}
+      {selectedIds.size > 0 && (
+        <div className="animate-slide-up" style={{
+          position: 'fixed',
+          bottom: '2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          padding: '0.75rem 1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+          zIndex: 100
+        }}>
+          <span className="mono" style={{ fontSize: '0.9rem' }}>
+            <span className="text-accent fw-bold">{selectedIds.size}</span> trade{selectedIds.size > 1 ? 's' : ''} selected
+          </span>
+          <button
+            className="btn btn-ghost"
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </button>
+          <button
+            className="btn btn-danger"
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+            onClick={() => setBulkDeleteModalOpen(true)}
+          >
+            Delete Selected
+          </button>
+        </div>
+      )}
+
+      {/* Single Delete Modal */}
       {deleteModalOpen && (
         <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="card animate-pop-in" style={{ maxWidth: '400px', width: '100%', margin: '0 1rem' }}>
@@ -240,6 +343,20 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => { setDeleteModalOpen(false); setTradeToDelete(null); }}>Cancel</button>
               <button className="btn btn-danger" onClick={handleDelete}>Delete Permanently</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Modal */}
+      {bulkDeleteModalOpen && (
+        <div className="animate-fade-in" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card animate-pop-in" style={{ maxWidth: '420px', width: '100%', margin: '0 1rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Delete {selectedIds.size} Trade{selectedIds.size > 1 ? 's' : ''}?</h3>
+            <p className="text-muted" style={{ marginBottom: '2rem' }}>Are you sure you want to delete <strong>{selectedIds.size} selected trade{selectedIds.size > 1 ? 's' : ''}</strong>? This action cannot be undone.</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setBulkDeleteModalOpen(false)}>Cancel</button>
+              <button className="btn btn-danger" onClick={handleBulkDelete}>Delete All Selected</button>
             </div>
           </div>
         </div>

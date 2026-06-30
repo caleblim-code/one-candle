@@ -288,6 +288,16 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
     else newSet.add(index);
     setSelectedRows(newSet);
   };
+
+  const toggleSelectAll = () => {
+    const validIndices = parsedRows.map((r, i) => r._isValid ? i : -1).filter(i => i >= 0);
+    const allSelected = validIndices.every(i => selectedRows.has(i));
+    if (allSelected) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(validIndices));
+    }
+  };
   
   const updateRowField = (index: number, field: string, value: string) => {
     const newRows = [...parsedRows];
@@ -340,7 +350,18 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
       {step === 2 && (
         <div className="animate-slide-up">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
-            <p className="text-muted" style={{ margin: 0 }}>Review parsed trades, correct any misreads, and add your playbook & notes before importing.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <p className="text-muted" style={{ margin: 0 }}>Review parsed trades, correct any misreads, and add your playbook & notes before importing.</p>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ whiteSpace: 'nowrap', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+                onClick={toggleSelectAll}
+                disabled={loading}
+              >
+                {(() => { const validIndices = parsedRows.map((r: any, idx: number) => r._isValid ? idx : -1).filter((idx: number) => idx >= 0); return validIndices.length > 0 && validIndices.every((idx: number) => selectedRows.has(idx)) ? 'Deselect All' : 'Select All'; })()}
+              </button>
+            </div>
             <div className="mono" style={{ fontSize: '0.9rem', backgroundColor: 'var(--surface-light)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
               <span className="text-accent">{Array.from(selectedRows).filter(i => parsedRows[i]._isValid).length}</span> valid trades selected
             </div>

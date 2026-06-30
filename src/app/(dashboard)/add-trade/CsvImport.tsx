@@ -210,6 +210,16 @@ export default function CsvImport({ accounts }: { accounts: any[] }) {
     setSelectedRows(newSet);
   };
 
+  const toggleSelectAll = () => {
+    const validIndices = parsedRows.map((r, i) => r._isValid ? i : -1).filter(i => i >= 0);
+    const allSelected = validIndices.length > 0 && validIndices.every(i => selectedRows.has(i));
+    if (allSelected) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(validIndices));
+    }
+  };
+
   return (
     <div className="card animate-fade-in" style={{ padding: '2rem' }}>
       <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -289,7 +299,14 @@ export default function CsvImport({ accounts }: { accounts: any[] }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', minWidth: '600px' }}>
               <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--surface)', zIndex: 1 }}>
                 <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
-                  <th style={{ padding: '0.75rem' }}>Import</th>
+                  <th style={{ padding: '0.75rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={(() => { const vi = parsedRows.map((r, i) => r._isValid ? i : -1).filter(i => i >= 0); return vi.length > 0 && vi.every(i => selectedRows.has(i)); })()}
+                      onChange={toggleSelectAll}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--accent)' }}
+                    />
+                  </th>
                   <th style={{ padding: '0.75rem' }}>Date</th>
                   <th style={{ padding: '0.75rem' }}>Ticker</th>
                   <th style={{ padding: '0.75rem' }}>Dir</th>
