@@ -85,6 +85,19 @@ export default function SidebarNav() {
       <Link href={createHref('/playbooks')} style={getStyle('/playbooks')}>Playbooks</Link>
       <Link href={createHref('/prop-firm')} style={getStyle('/prop-firm')}>Prop Firm</Link>
       <Link href={createHref('/settings')} style={getStyle('/settings')}>Settings</Link>
+
+      <div style={{ margin: '1rem 0', height: '1px', backgroundColor: 'var(--border)' }}></div>
+      <a 
+        href="https://www.tradingview.com/chart/" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        style={{ ...linkStyle, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}
+        onMouseOver={e => e.currentTarget.style.color = 'var(--accent)'}
+        onMouseOut={e => e.currentTarget.style.color = 'var(--text-muted)'}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        TradingView
+      </a>
     </nav>
   );
 }

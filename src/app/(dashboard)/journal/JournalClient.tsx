@@ -259,8 +259,12 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                           <p style={{ whiteSpace: 'pre-wrap', backgroundColor: 'var(--surface)', padding: '1rem', borderRadius: '8px' }}>
                             {trade.notes || 'No notes provided.'}
                           </p>
-                          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                             <Link href={`/edit-trade/${trade.id}`} className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>Edit</Link>
+                            <a href={`https://www.tradingview.com/chart/?symbol=${trade.ticker}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                              View Chart
+                            </a>
                             <button className="btn btn-danger" onClick={() => confirmDelete(trade.id)} style={{ padding: '0.5rem 1rem' }}>Delete</button>
                           </div>
                         </div>
