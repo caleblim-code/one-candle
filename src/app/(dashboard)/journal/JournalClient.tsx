@@ -44,18 +44,27 @@ export default function JournalClient({ accountId }: { accountId: string }) {
   const handleDelete = async () => {
     if (!tradeToDelete) return;
     
+    const idToDelete = tradeToDelete;
     setDeleteModalOpen(false);
+    setTradeToDelete(null);
+    
+    // Optimistic update: immediately remove the trade from the UI
+    if (data && data.trades) {
+      mutate(
+        { ...data, trades: data.trades.filter((t: any) => t.id !== idToDelete) },
+        false // don't revalidate immediately
+      );
+    }
     
     try {
-      const res = await fetch(`/api/trades/${tradeToDelete}`, { method: 'DELETE' });
+      const res = await fetch(`/api/trades/${idToDelete}`, { method: 'DELETE' });
       if (!res.ok) {
         throw new Error('Failed to delete');
       }
-      mutate(); // re-fetch after delete
+      mutate(); // re-fetch after successful delete to sync
     } catch (err) {
       alert('Failed to delete trade.');
-    } finally {
-      setTradeToDelete(null);
+      mutate(); // rollback on error
     }
   };
 

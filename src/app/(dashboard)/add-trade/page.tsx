@@ -63,7 +63,51 @@ export default function AddTradePage() {
     brokerTradeId: '',
     pnl: ''
   });
-  
+
+  useEffect(() => {
+    fetch('/api/playbooks').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setPlaybooks(data);
+    }).catch(() => {});
+
+    fetch('/api/accounts').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        setAccounts(data);
+        const defaultAcc = data.find(a => a.isDefault);
+        if (defaultAcc) {
+          setFormData(prev => ({ ...prev, accountId: defaultAcc.id }));
+        } else if (data.length > 0) {
+          setFormData(prev => ({ ...prev, accountId: data[0].id }));
+        }
+      }
+    }).catch(() => {});
+    
+    fetch('/api/user/settings').then(r => r.json()).then(data => {
+      if (data) {
+        if (data.setupTags) setSetupTagsList(JSON.parse(data.setupTags));
+        if (data.mistakeTags) setMistakeTagsList(JSON.parse(data.mistakeTags));
+        if (data.defaultAsset) {
+          setDefaultAsset(data.defaultAsset);
+          setFormData(prev => ({ ...prev, assetClass: data.defaultAsset }));
+        }
+      }
+    }).catch(() => {});
+
+    // Attempt to pre-fill playbook and setup tag from last saved trade
+    try {
+      const lastSetup = localStorage.getItem('lastTradeSetupTag');
+      const lastPlaybook = localStorage.getItem('lastTradePlaybookId');
+      if (lastSetup || lastPlaybook) {
+        setFormData(prev => ({
+          ...prev,
+          setupTag: lastSetup || prev.setupTag,
+          playbookId: lastPlaybook || prev.playbookId
+        }));
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }, []);
+
   const [images, setImages] = useState<File[]>([]);
   const [livePnl, setLivePnl] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -177,6 +221,15 @@ export default function AddTradePage() {
             }).catch(() => {}); // silently fail individual image uploads for now
           }
         }
+        
+        // Save setup and playbook to local storage for the next trade
+        try {
+          localStorage.setItem('lastTradeSetupTag', formData.setupTag);
+          localStorage.setItem('lastTradePlaybookId', formData.playbookId);
+        } catch (e) {
+          // ignore
+        }
+
         mutate(key => typeof key === 'string' && (key.startsWith('/api/trades') || key.startsWith('/api/analytics') || key.startsWith('/api/dashboard')), undefined, { revalidate: true });
         router.refresh();
         router.push('/journal');
