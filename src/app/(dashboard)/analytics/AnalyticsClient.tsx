@@ -229,9 +229,10 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     return Array.from(map.entries()).map(([name, stat]) => ({ name, ...stat })).sort((a, b) => b.pnl - a.pnl);
   }, [trades, initialJournals]);
 
-  // Calendar grouping
+  // Calendar grouping — uses exitDate (when the trade result was realized)
   const calendarTrades = useMemo(() => {
     return initialTrades.filter((t: any) => {
+      if (!t.exitDate) return false; // Only closed trades with an exit date
       if (filterAsset !== 'All' && t.assetClass !== filterAsset) return false;
       if (filterSetup !== 'All' && t.setupTag !== filterSetup) return false;
       return true;
@@ -241,7 +242,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
   const calendarData = useMemo(() => {
     const map = new Map<string, { pnl: number, trades: any[] }>();
     calendarTrades.forEach((t: any) => {
-      const dString = new Date(t.entryDate).toISOString().split('T')[0];
+      const dString = new Date(t.exitDate).toISOString().split('T')[0];
       const existing = map.get(dString) || { pnl: 0, trades: [] };
       existing.pnl += (t.pnl || 0);
       existing.trades.push(t);

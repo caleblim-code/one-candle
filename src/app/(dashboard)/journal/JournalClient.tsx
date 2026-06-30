@@ -108,7 +108,8 @@ export default function JournalClient({ accountId }: { accountId: string }) {
           <table className="table-mobile-cards" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', backgroundColor: 'var(--surface-light)' }}>
-              <th style={{ padding: '1rem' }}>Date</th>
+              <th style={{ padding: '1rem' }}>Entry Date</th>
+              <th style={{ padding: '1rem' }}>Exit Date</th>
               <th style={{ padding: '1rem' }}>Ticker</th>
               <th style={{ padding: '1rem' }}>Direction</th>
               <th style={{ padding: '1rem' }}>Entry</th>
@@ -127,7 +128,8 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                   onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--surface-light)'}
                   onMouseOut={e => e.currentTarget.style.backgroundColor = expandedId === trade.id ? 'var(--surface-light)' : 'transparent'}
                 >
-                  <td data-label="Date" style={{ padding: '1rem' }}>{new Date(trade.entryDate).toLocaleDateString()}</td>
+                  <td data-label="Entry Date" style={{ padding: '1rem' }}>{new Date(trade.entryDate).toLocaleDateString()}</td>
+                  <td data-label="Exit Date" style={{ padding: '1rem' }}>{trade.exitDate ? new Date(trade.exitDate).toLocaleDateString() : '--'}</td>
                   <td data-label="Ticker" style={{ padding: '1rem' }} className="mono fw-bold">{trade.ticker.toUpperCase()}</td>
                   <td data-label="Direction" style={{ padding: '1rem' }}><span className={`badge ${trade.direction === 'Long' ? 'win' : 'loss'}`}>{trade.direction}</span></td>
                   <td data-label="Entry" style={{ padding: '1rem' }} className="mono">${trade.entryPrice.toFixed(2)}</td>
@@ -140,7 +142,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                 </tr>
                 {expandedId === trade.id && (
                   <tr>
-                    <td colSpan={8} style={{ padding: 0 }}>
+                    <td colSpan={9} style={{ padding: 0 }}>
                       <div className="animate-slide-up" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface-light)' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
                         <div>
