@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { mutate } from 'swr';
 
@@ -115,6 +115,20 @@ export default function EditTradePage() {
       setLivePnl(null);
     }
   }, [formData.entryPrice, formData.exitPrice, formData.positionSize, formData.fees, formData.direction]);
+
+  const isInvalidSL = useMemo(() => {
+    if (formData.status !== 'Closed') return false;
+    if (!formData.stopLoss) return true;
+    if (formData.entryPrice) {
+      const entry = parseFloat(formData.entryPrice);
+      const sl = parseFloat(formData.stopLoss);
+      if (!isNaN(entry) && !isNaN(sl)) {
+        if (formData.direction === 'Long' && sl >= entry) return true;
+        if (formData.direction === 'Short' && sl <= entry) return true;
+      }
+    }
+    return false;
+  }, [formData.status, formData.stopLoss, formData.entryPrice, formData.direction]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -275,7 +289,7 @@ export default function EditTradePage() {
             )}
               <div className="form-group">
                 <label className="form-label">Stop Loss</label>
-                <input type="number" step="any" name="stopLoss" className="form-input mono" value={formData.stopLoss} onChange={handleChange} style={!formData.stopLoss && formData.status === 'Closed' ? { borderColor: 'var(--warning, #f59e0b)' } : {}} />
+                <input type="number" step="any" name="stopLoss" className="form-input mono" value={formData.stopLoss} onChange={handleChange} style={isInvalidSL ? { borderColor: 'var(--warning, #f59e0b)' } : {}} />
               </div>
               <div className="form-group">
                 <label className="form-label">Take Profit (Optional)</label>
@@ -284,10 +298,10 @@ export default function EditTradePage() {
             </div>
 
             {/* SL reminder for BE or missing SL */}
-            {formData.status === 'Closed' && !formData.stopLoss && (
+            {isInvalidSL && (
               <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b', padding: '0.75rem 1rem', borderRadius: '8px', marginTop: '1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                <span><strong>Stop Loss missing.</strong> Even if you closed at breakeven (BE), please enter your <em>original</em> stop loss. Without it, your Avg R-Multiple and risk/reward stats won&apos;t be accurate.</span>
+                <span><strong>Invalid or Missing Initial Stop Loss.</strong> It looks like this Stop Loss is missing or was moved to Breakeven/Profit. Please enter your <em>original initial</em> Stop Loss to ensure Avg R-Multiple and Risk/Reward stats are accurate.</span>
               </div>
             )}
 
