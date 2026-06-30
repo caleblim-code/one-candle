@@ -125,6 +125,21 @@ export default function AddTradePage() {
       if (!formData.exitPrice) errors.exitPrice = 'Exit price is required for closed trades';
       if (!formData.exitDate) errors.exitDate = 'Exit date is required for closed trades';
       if (!formData.pnl && livePnl === null && !formData.exitPrice) errors.pnl = 'P&L is required when exit price is missing';
+      
+      // Stop Loss Validation for Closed Trades
+      if (!formData.stopLoss) {
+        errors.stopLoss = 'Stop Loss is required. Please enter your initial Stop Loss.';
+      } else if (formData.entryPrice) {
+        const entry = parseFloat(formData.entryPrice);
+        const sl = parseFloat(formData.stopLoss);
+        if (!isNaN(entry) && !isNaN(sl)) {
+          if (formData.direction === 'Long' && sl >= entry) {
+            errors.stopLoss = 'Invalid SL: Stop Loss for a Long trade must be below Entry Price. Please enter your INITIAL Stop Loss, not a Breakeven stop.';
+          } else if (formData.direction === 'Short' && sl <= entry) {
+            errors.stopLoss = 'Invalid SL: Stop Loss for a Short trade must be above Entry Price. Please enter your INITIAL Stop Loss, not a Breakeven stop.';
+          }
+        }
+      }
     }
 
     if (Object.keys(errors).length > 0) {
