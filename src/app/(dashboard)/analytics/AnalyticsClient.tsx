@@ -8,6 +8,14 @@ import DashboardLoading from '../dashboard/loading';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
+// Helper: returns YYYY-MM-DD in the user's local timezone (avoids UTC shift from toISOString)
+const toLocalDateStr = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function AnalyticsClient({ accountId }: { accountId: string }) {
   const { data, error, isLoading } = useSWR(`/api/analytics/data?account=${accountId}`, fetcher);
 
@@ -215,7 +223,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     });
 
     trades.forEach((t: any) => {
-      const dString = new Date(t.entryDate).toISOString().split('T')[0];
+      const dString = toLocalDateStr(new Date(t.entryDate));
       const states = journalMap.get(dString) || ['Untagged'];
       
       states.forEach(state => {
@@ -242,7 +250,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
   const calendarData = useMemo(() => {
     const map = new Map<string, { pnl: number, trades: any[] }>();
     calendarTrades.forEach((t: any) => {
-      const dString = new Date(t.exitDate).toISOString().split('T')[0];
+      const dString = toLocalDateStr(new Date(t.exitDate));
       const existing = map.get(dString) || { pnl: 0, trades: [] };
       existing.pnl += (t.pnl || 0);
       existing.trades.push(t);
