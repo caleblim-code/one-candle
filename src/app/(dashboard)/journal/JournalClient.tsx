@@ -17,6 +17,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tradeToDelete, setTradeToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -94,27 +95,31 @@ export default function JournalClient({ accountId }: { accountId: string }) {
   const handleBulkDelete = async () => {
     const idsToDelete = Array.from(selectedIds);
     setBulkDeleteModalOpen(false);
-
-    // Optimistic update: immediately remove selected trades from the UI
-    if (data && data.trades) {
-      const idSet = new Set(idsToDelete);
-      mutate(
-        { ...data, trades: data.trades.filter((t: any) => !idSet.has(t.id)) },
-        false
-      );
-    }
-    setSelectedIds(new Set());
+    setIsDeleting(true);
 
     try {
-      // Delete sequentially
-      for (const id of idsToDelete) {
-        const res = await fetch(`/api/trades/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error(`Failed to delete trade ${id}`);
+      const res = await fetch(`/api/trades/bulk`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tradeIds: idsToDelete })
+      });
+      
+      if (!res.ok) throw new Error('Failed to delete trades');
+      
+      // Optimistic update: immediately remove selected trades from the UI
+      if (data && data.trades) {
+        const idSet = new Set(idsToDelete);
+        mutate(
+          { ...data, trades: data.trades.filter((t: any) => !idSet.has(t.id)) },
+          false
+        );
       }
+      setSelectedIds(new Set());
       mutate(); // re-fetch to sync
     } catch (err) {
-      alert('Some trades failed to delete. Refreshing...');
-      mutate(); // rollback on error
+      alert('Failed to delete trades. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -321,6 +326,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             className="btn btn-ghost"
             style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
             onClick={() => setSelectedIds(new Set())}
+            disabled={isDeleting}
           >
             Clear
           </button>
@@ -328,8 +334,9 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             className="btn btn-danger"
             style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
             onClick={() => setBulkDeleteModalOpen(true)}
+            disabled={isDeleting}
           >
-            Delete Selected
+            {isDeleting ? 'Deleting...' : 'Delete Selected'}
           </button>
         </div>
       )}

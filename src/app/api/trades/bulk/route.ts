@@ -76,3 +76,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json();
+    const { tradeIds } = body;
+
+    if (!Array.isArray(tradeIds) || tradeIds.length === 0) {
+      return NextResponse.json({ error: 'No trade IDs provided' }, { status: 400 });
+    }
+
+    const result = await prisma.trade.deleteMany({
+      where: {
+        id: { in: tradeIds },
+        userId: session.id, // Security: only delete trades belonging to the user
+      },
+    });
+
+    return NextResponse.json({ success: true, count: result.count });
+  } catch (error: any) {
+    console.error('Bulk delete error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
