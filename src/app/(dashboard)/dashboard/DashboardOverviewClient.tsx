@@ -12,6 +12,7 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
   const { data, error, isLoading } = useSWR(`/api/dashboard/stats?account=${accountId}`, fetcher);
   const { data: goalsData } = useSWR(accountId !== 'all' ? `/api/goals?account=${accountId}` : null, fetcher);
   const { data: goalsProgressData } = useSWR(accountId !== 'all' ? `/api/goals/progress?account=${accountId}` : null, fetcher);
+  const { data: insightsData } = useSWR(`/api/insights?account=${accountId}`, fetcher);
   
   const [equityMode, setEquityMode] = useState<'pnl' | 'balance'>('pnl');
 
@@ -239,6 +240,39 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
           </div>
         </div>
       </div>
+
+      {/* Condensed Insights Widget */}
+      {insightsData && !insightsData.insufficient && insightsData.insights?.length > 0 && (
+        <div className="card animate-slide-up" style={{ marginTop: '2rem', padding: '1.5rem', backgroundColor: 'var(--surface)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.2rem' }}>💡</span> AI Insights
+            </h3>
+            <Link href="/insights" style={{ color: 'var(--accent)', fontSize: '0.9rem', fontWeight: '600' }}>View All &rarr;</Link>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {insightsData.insights.slice(0, 2).map((insight: any) => (
+              <div key={insight.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--surface-light)', padding: '1rem', borderRadius: '8px' }}>
+                <div>
+                  <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{insight.title}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{insight.description}</div>
+                </div>
+                <div style={{ 
+                  padding: '0.25rem 0.5rem', 
+                  borderRadius: '12px', 
+                  fontSize: '0.8rem', 
+                  fontWeight: 600, 
+                  backgroundColor: insight.severity === 'negative' ? 'rgba(255, 69, 58, 0.1)' : 'rgba(0, 224, 84, 0.1)',
+                  color: insight.severity === 'negative' ? 'var(--danger)' : 'var(--success)'
+                }}>
+                  {insight.stat}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
