@@ -31,7 +31,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email, timezone, currency, defaultAsset, startingBalance, setupTags, mistakeTags } = body;
+    const { name, email, timezone, currency, defaultAsset, startingBalance, setupTags, mistakeTags, weeklyDigestEnabled } = body;
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
@@ -44,6 +44,7 @@ export async function PUT(request: Request) {
     if (startingBalance !== undefined) updateData.startingBalance = startingBalance;
     if (setupTags !== undefined) updateData.setupTags = setupTags;
     if (mistakeTags !== undefined) updateData.mistakeTags = mistakeTags;
+    if (weeklyDigestEnabled !== undefined) updateData.weeklyDigestEnabled = weeklyDigestEnabled;
 
     const user = await prisma.user.update({
       where: { id: session.id },

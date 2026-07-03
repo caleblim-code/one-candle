@@ -14,6 +14,7 @@ export default function SettingsClient({ user }: { user: any }) {
     currency: user.currency || 'USD',
     defaultAsset: user.defaultAsset || 'Stocks',
     startingBalance: user.startingBalance || 0,
+    weeklyDigestEnabled: user.weeklyDigestEnabled !== false,
   });
 
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -263,6 +264,18 @@ export default function SettingsClient({ user }: { user: any }) {
             <div className="form-group">
               <label className="form-label">Email Address</label>
               <input required type="email" className="form-input" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            </div>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '-0.5rem', marginBottom: '1.5rem' }}>
+              <input 
+                type="checkbox" 
+                id="weeklyDigest" 
+                checked={formData.weeklyDigestEnabled} 
+                onChange={e => setFormData({...formData, weeklyDigestEnabled: e.target.checked})} 
+                style={{ width: '16px', height: '16px', accentColor: 'var(--accent)' }}
+              />
+              <label htmlFor="weeklyDigest" style={{ fontSize: '0.9rem', color: 'var(--text-main)', cursor: 'pointer' }}>
+                Receive weekly trade digest emails
+              </label>
             </div>
             <div className="form-group">
               <label className="form-label">Timezone</label>

@@ -19,6 +19,7 @@ export default async function SettingsPage() {
       startingBalance: true,
       setupTags: true,
       mistakeTags: true,
+      weeklyDigestEnabled: true,
     }
   });
 
