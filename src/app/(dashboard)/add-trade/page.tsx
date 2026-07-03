@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { mutate } from 'swr';
+import useSWR from 'swr';
 import CsvImport from './CsvImport';
 import BulkImageImport from './BulkImageImport';
 
@@ -149,6 +150,24 @@ export default function AddTradePage() {
     return false;
   }, [formData.status, formData.stopLoss, formData.entryPrice, formData.direction]);
 
+  // Check for goal limits
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data: progressData } = useSWR(formData.accountId ? `/api/goals/progress?account=${formData.accountId}` : null, fetcher);
+  const { data: goalsData } = useSWR(formData.accountId ? `/api/goals?account=${formData.accountId}` : null, fetcher);
+
+  const activeGoals = goalsData?.goals?.filter((g: any) => g.status === 'Active') || [];
+  let dailyWarning = null;
+
+  for (const goal of activeGoals) {
+    if (goal.maxTradesPerDay) {
+      const prog = progressData?.progress?.[goal.id];
+      if (prog && prog.tradesToday >= goal.maxTradesPerDay) {
+        dailyWarning = `You've hit your daily trade limit of ${goal.maxTradesPerDay} — consider stepping away.`;
+        break; // Only need to show one warning
+      }
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -270,6 +289,15 @@ export default function AddTradePage() {
       </div>
       
       {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
+
+      {dailyWarning && (
+        <div className="card" style={{ backgroundColor: 'rgba(255, 171, 0, 0.1)', border: '1px solid var(--warning)', marginBottom: '2rem', padding: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--warning)', fontWeight: 600 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span>{dailyWarning}</span>
+          </div>
+        </div>
+      )}
 
       {mode === 'import' ? (
         <CsvImport accounts={accounts} />

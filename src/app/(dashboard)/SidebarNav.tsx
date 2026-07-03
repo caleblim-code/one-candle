@@ -82,6 +82,7 @@ export default function SidebarNav() {
       <Link href={createHref('/add-trade')} style={getStyle('/add-trade')}>Add Trade</Link>
       <Link href={createHref('/daily-notes')} style={getStyle('/daily-notes')}>Daily Notes</Link>
       <Link href={createHref('/analytics')} style={getStyle('/analytics')}>Analytics</Link>
+      <Link href={createHref('/goals')} style={getStyle('/goals')}>Goals</Link>
       <Link href={createHref('/playbooks')} style={getStyle('/playbooks')}>Playbooks</Link>
       <Link href={createHref('/prop-firm')} style={getStyle('/prop-firm')}>Prop Firm</Link>
       <Link href={createHref('/settings')} style={getStyle('/settings')}>Settings</Link>

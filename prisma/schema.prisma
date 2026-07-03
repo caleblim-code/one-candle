@@ -64,6 +64,7 @@ model TradingAccount {
   rules        PropFirmRules?
   payouts      Payout[]
   transactions AccountTransaction[]
+  goals        Goal[]
 }
 
 model Trade {
@@ -164,3 +165,26 @@ model AccountTransaction {
 
   @@index([accountId, date])
 }
+
+model Goal {
+  id              String   @id @default(uuid())
+  accountId       String
+  account         TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  periodType      String   // "Weekly", "Monthly"
+  startDate       DateTime
+  endDate         DateTime
+  
+  // Targets
+  profitTarget    Float?
+  maxLoss         Float?
+  targetWinRate   Float?
+  targetTrades    Int?
+  maxTradesPerDay Int?
+  
+  status          String   @default("Active") // "Active", "Archived"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([accountId, status])
+}
+

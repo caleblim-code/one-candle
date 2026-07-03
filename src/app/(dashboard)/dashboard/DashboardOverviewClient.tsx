@@ -10,6 +10,9 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function DashboardOverviewClient({ accountId }: { accountId: string }) {
   const { data, error, isLoading } = useSWR(`/api/dashboard/stats?account=${accountId}`, fetcher);
+  const { data: goalsData } = useSWR(accountId !== 'all' ? `/api/goals?account=${accountId}` : null, fetcher);
+  const { data: goalsProgressData } = useSWR(accountId !== 'all' ? `/api/goals/progress?account=${accountId}` : null, fetcher);
+  
   const [equityMode, setEquityMode] = useState<'pnl' | 'balance'>('pnl');
 
   // Safely extract data for hooks
@@ -48,6 +51,35 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
 
   if (error) return <div className="text-danger" style={{ padding: '2rem' }}>Failed to load dashboard data.</div>;
   if (isLoading) return <DashboardLoading />;
+
+  const activeGoals = goalsData?.goals?.filter((g: any) => g.status === 'Active') || [];
+  const goalProgress = goalsProgressData?.progress || {};
+
+  const renderProgressBar = (label: string, current: number, target: number, reverseColors = false) => {
+    if (target === null || target === undefined) return null;
+    const percent = Math.min(Math.max((current / target) * 100, 0), 100);
+    
+    let colorClass = 'var(--accent)';
+    if (reverseColors) {
+      if (percent > 90) colorClass = 'var(--danger)';
+      else if (percent > 70) colorClass = 'var(--warning)';
+    } else {
+      if (percent < 30) colorClass = 'var(--danger)';
+      else if (percent < 70) colorClass = 'var(--warning)';
+    }
+
+    return (
+      <div style={{ marginBottom: '1rem' }} key={label}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.85rem' }}>
+          <span className="text-muted">{label}</span>
+          <span className="mono fw-bold">{current.toLocaleString(undefined, { maximumFractionDigits: 2 })} / {target.toLocaleString()}</span>
+        </div>
+        <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${percent}%`, backgroundColor: colorClass, transition: 'width 0.3s ease' }}></div>
+        </div>
+      </div>
+    );
+  };
   if (!data || !data.success) return <DashboardLoading />;
 
   const { stats, recentTrades } = data;
@@ -136,35 +168,76 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
         </div>
       </div>
 
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3>Recent Trades</h3>
-          <Link href="/journal" style={{ color: 'var(--accent)', fontSize: '0.9rem', fontWeight: '600' }}>View All &rarr;</Link>
+      <div className="grid-responsive-2" style={{ gap: '2rem' }}>
+        {/* Goals Widget */}
+        <div className="card animate-slide-up" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3>Active Goals</h3>
+            <Link href="/goals" style={{ color: 'var(--accent)', fontSize: '0.9rem', fontWeight: '600' }}>Manage &rarr;</Link>
+          </div>
+          {activeGoals.length === 0 ? (
+            <div style={{ padding: '2rem 0', textAlign: 'center' }}>
+              <p className="text-muted" style={{ marginBottom: '1rem' }}>No active goals set for this account.</p>
+              <Link href="/goals" className="btn btn-ghost" style={{ fontSize: '0.9rem' }}>Set a Goal</Link>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {activeGoals.map((goal: any) => {
+                const prog = goalProgress[goal.id] || { currentPnl: 0, currentWinRate: 0, currentTrades: 0, tradesToday: 0 };
+                return (
+                  <div key={goal.id} style={{ backgroundColor: 'var(--surface-light)', padding: '1rem', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                      <span className="fw-bold">{goal.periodType} Target</span>
+                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>Ends {new Date(goal.endDate).toLocaleDateString()}</span>
+                    </div>
+                    {goal.profitTarget && renderProgressBar('Profit ($)', prog.currentPnl, goal.profitTarget)}
+                    {goal.maxLoss && renderProgressBar('Max Loss ($)', prog.currentPnl < 0 ? Math.abs(prog.currentPnl) : 0, goal.maxLoss, true)}
+                    {goal.targetWinRate && renderProgressBar('Win Rate (%)', prog.currentWinRate, goal.targetWinRate)}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <table className="table-mobile-cards" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              <th style={{ padding: '0.75rem 0' }}>Ticker</th>
-              <th style={{ padding: '0.75rem 0' }}>Dir</th>
-              <th style={{ padding: '0.75rem 0' }}>P&L</th>
-              <th style={{ padding: '0.75rem 0' }}>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentTrades.map((t: any) => (
-              <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td data-label="Ticker" style={{ padding: '1rem 0' }} className="mono fw-bold">{t.ticker.toUpperCase()}</td>
-                <td data-label="Dir" style={{ padding: '1rem 0' }}>
-                  <span className={`badge ${t.direction === 'Long' ? 'win' : 'loss'}`}>{t.direction}</span>
-                </td>
-                <td data-label="P&L" style={{ padding: '1rem 0' }} className={`mono ${t.pnl && t.pnl >= 0 ? 'text-accent' : t.pnl && t.pnl < 0 ? 'text-danger' : ''}`}>
-                  {t.pnl !== null ? `${t.pnl >= 0 ? '+' : ''}$${Math.abs(t.pnl).toFixed(2)}` : '--'}
-                </td>
-                <td data-label="Date" style={{ padding: '1rem 0', color: 'var(--text-muted)' }}>{new Date(t.entryDate).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+        {/* Recent Trades Widget */}
+        <div className="card animate-slide-up" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+            <h3 style={{ margin: 0 }}>Recent Trades</h3>
+            <Link href="/journal" style={{ color: 'var(--accent)', fontSize: '0.9rem', fontWeight: '600' }}>View All &rarr;</Link>
+          </div>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.9rem', backgroundColor: 'var(--surface-light)' }}>
+                  <th style={{ padding: '0.75rem 1.5rem' }}>Ticker</th>
+                  <th style={{ padding: '0.75rem 1.5rem' }}>Dir</th>
+                  <th style={{ padding: '0.75rem 1.5rem' }}>P&L</th>
+                  <th style={{ padding: '0.75rem 1.5rem' }}>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTrades.map((t: any) => (
+                  <tr key={t.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '1rem 1.5rem' }} className="mono fw-bold">{t.ticker.toUpperCase()}</td>
+                    <td style={{ padding: '1rem 1.5rem' }}>
+                      <span className={`badge ${t.direction === 'Long' ? 'win' : 'loss'}`}>{t.direction}</span>
+                    </td>
+                    <td style={{ padding: '1rem 1.5rem' }} className={`mono ${t.pnl && t.pnl >= 0 ? 'text-accent' : t.pnl && t.pnl < 0 ? 'text-danger' : ''}`}>
+                      {t.pnl !== null ? `${t.pnl >= 0 ? '+' : ''}$${Math.abs(t.pnl).toFixed(2)}` : '--'}
+                    </td>
+                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{new Date(t.entryDate).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {recentTrades.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No recent trades</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
