@@ -11,11 +11,10 @@ interface TradeReplayModalProps {
 export default function TradeReplayModal({ trade, onClose }: TradeReplayModalProps) {
   const [dataPoints, setDataPoints] = useState<any[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
 
-  // Generate synthetic price path
   const fullPath = useMemo(() => {
-    if (!trade.entryPrice || !trade.exitPrice) return [];
+    if (trade.entryPrice == null || trade.exitPrice == null) return [];
 
     const numPoints = 100;
     const path = [];
@@ -142,7 +141,7 @@ export default function TradeReplayModal({ trade, onClose }: TradeReplayModalPro
         </div>
 
         {/* Chart Area */}
-        <div style={{ flex: 1, minHeight: 0, backgroundColor: 'var(--surface-light)', borderRadius: '8px', padding: '1rem', position: 'relative' }}>
+        <div style={{ flex: 1, minHeight: '300px', backgroundColor: 'var(--surface-light)', borderRadius: '8px', padding: '1rem', position: 'relative' }}>
           {fullPath.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dataPoints}>
