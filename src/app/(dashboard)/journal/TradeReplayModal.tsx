@@ -99,7 +99,7 @@ export default function TradeReplayModal({ trade, onClose }: TradeReplayModalPro
   };
 
   const isWin = trade.pnl && trade.pnl > 0;
-  const lineColor = isWin ? 'var(--success)' : 'var(--danger)';
+  const lineColor = isWin ? '#00e054' : '#ff453a';
 
   // Calculate Y-axis domain to include stop loss and take profit if they exist
   const allPrices = fullPath.map(p => p.price);
@@ -145,11 +145,11 @@ export default function TradeReplayModal({ trade, onClose }: TradeReplayModalPro
           {fullPath.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dataPoints}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="displayTime" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} minTickGap={50} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                <XAxis dataKey="displayTime" stroke="#888" fontSize={12} tickLine={false} axisLine={false} minTickGap={50} />
                 <YAxis 
                   domain={[minPrice - padding, maxPrice + padding]} 
-                  stroke="var(--text-muted)" 
+                  stroke="#888" 
                   fontSize={12} 
                   tickLine={false} 
                   axisLine={false} 
@@ -164,13 +164,13 @@ export default function TradeReplayModal({ trade, onClose }: TradeReplayModalPro
                 />
                 
                 {trade.takeProfit && (
-                  <ReferenceLine y={trade.takeProfit} stroke="var(--success)" strokeDasharray="5 5" label={{ position: 'insideTopLeft', value: 'Take Profit', fill: 'var(--success)', fontSize: 12 }} />
+                  <ReferenceLine y={trade.takeProfit} stroke="#00e054" strokeDasharray="5 5" label={{ position: 'insideTopLeft', value: 'Take Profit', fill: '#00e054', fontSize: 12 }} />
                 )}
                 {trade.stopLoss && (
-                  <ReferenceLine y={trade.stopLoss} stroke="var(--danger)" strokeDasharray="5 5" label={{ position: 'insideBottomLeft', value: 'Stop Loss', fill: 'var(--danger)', fontSize: 12 }} />
+                  <ReferenceLine y={trade.stopLoss} stroke="#ff453a" strokeDasharray="5 5" label={{ position: 'insideBottomLeft', value: 'Stop Loss', fill: '#ff453a', fontSize: 12 }} />
                 )}
                 {trade.entryPrice && (
-                  <ReferenceLine y={trade.entryPrice} stroke="var(--text-muted)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'Entry', fill: 'var(--text-muted)', fontSize: 12 }} />
+                  <ReferenceLine y={trade.entryPrice} stroke="#888" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'Entry', fill: '#888', fontSize: 12 }} />
                 )}
 
                 <Line 
@@ -180,8 +180,8 @@ export default function TradeReplayModal({ trade, onClose }: TradeReplayModalPro
                   strokeWidth={3} 
                   dot={(props: any) => {
                     const { cx, cy, payload } = props;
-                    if (payload.isEntry) return <circle cx={cx} cy={cy} r={6} fill="var(--text-muted)" />;
-                    if (payload.isExit) return <circle cx={cx} cy={cy} r={8} fill={lineColor} stroke="var(--surface)" strokeWidth={2} />;
+                    if (payload.isEntry) return <circle cx={cx} cy={cy} r={6} fill="#888" />;
+                    if (payload.isExit) return <circle cx={cx} cy={cy} r={8} fill={lineColor} stroke="#1a1a1a" strokeWidth={2} />;
                     return <circle cx={cx} cy={cy} r={0} />;
                   }}
                   isAnimationActive={false} // We handle animation manually
