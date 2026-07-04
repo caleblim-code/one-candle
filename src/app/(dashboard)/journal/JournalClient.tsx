@@ -5,6 +5,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import DashboardLoading from '../dashboard/loading';
 import TradeImages from './TradeImages';
+import TradeReplayModal from './TradeReplayModal';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -18,6 +19,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tradeToDelete, setTradeToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [replayTrade, setReplayTrade] = useState<any>(null);
   
   // Bulk Selection State
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -265,6 +267,10 @@ export default function JournalClient({ accountId }: { accountId: string }) {
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                               View Chart
                             </a>
+                            <button className="btn btn-ghost" onClick={() => setReplayTrade(trade)} style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                              Replay Trade
+                            </button>
                             <button className="btn btn-danger" onClick={() => confirmDelete(trade.id)} style={{ padding: '0.5rem 1rem' }}>Delete</button>
                           </div>
                         </div>
@@ -371,6 +377,11 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Trade Replay Modal */}
+      {replayTrade && (
+        <TradeReplayModal trade={replayTrade} onClose={() => setReplayTrade(null)} />
       )}
     </div>
   );
