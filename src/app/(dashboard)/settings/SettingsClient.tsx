@@ -239,7 +239,7 @@ export default function SettingsClient({ user }: { user: any }) {
       <h2 style={{ marginBottom: '2rem' }}>Settings</h2>
 
       {msg.text && (
-        <div style={{ padding: '1rem', borderRadius: '8px', marginBottom: '2rem', backgroundColor: msg.type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 210, 75, 0.1)', color: msg.type === 'error' ? 'var(--danger)' : 'var(--accent)', border: `1px solid ${msg.type === 'error' ? 'var(--danger)' : 'var(--accent)'}` }}>
+        <div style={{ padding: '1rem', borderRadius: '8px', marginBottom: '2rem', backgroundColor: msg.type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(82, 164, 154, 0.1)', color: msg.type === 'error' ? 'var(--danger)' : 'var(--accent)', border: `1px solid ${msg.type === 'error' ? 'var(--danger)' : 'var(--accent)'}` }}>
           {msg.text}
         </div>
       )}
@@ -614,7 +614,7 @@ export default function SettingsClient({ user }: { user: any }) {
             <div className="grid-responsive-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
               {/* CSV Export */}
               <div style={{ padding: '1.5rem', backgroundColor: 'var(--surface-light)', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textAlign: 'center' }}>
-                <div style={{ width: '50px', height: '50px', borderRadius: '12px', backgroundColor: 'rgba(0, 210, 75, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                <div style={{ width: '50px', height: '50px', borderRadius: '12px', backgroundColor: 'rgba(82, 164, 154, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                 </div>
                 <div>

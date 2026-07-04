@@ -45,7 +45,7 @@ export default function LoginPage() {
           <p className="text-muted">Welcome back. Log in to your journal.</p>
         </div>
         
-        {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{error}</div>}
+        {error && <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{error}</div>}
 
         <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
         <form onSubmit={handleLogin}>

@@ -2,12 +2,12 @@
   --bg-color: #F8FAFC;
   --surface: #FFFFFF;
   --surface-light: #F1F5F9;
-  --accent: #00D24B;
-  --accent-glow: rgba(0, 210, 75, 0.15);
+  --accent: #52A49A;
+  --accent-glow: rgba(82, 164, 154, 0.15);
   --text-main: #0F172A;
   --text-muted: #64748B;
   --border: rgba(0, 0, 0, 0.08);
-  --danger: #EF4444;
+  --danger: #DD5E56;
   --font-sans: 'Outfit', sans-serif;
   --font-mono: 'Space Mono', monospace;
 }
@@ -90,7 +90,7 @@ a {
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 224, 84, 0.3);
+  box-shadow: 0 6px 20px rgba(82, 164, 154, 0.3);
 }
 
 .btn-ghost {
@@ -110,7 +110,7 @@ a {
   border: 1px solid var(--danger);
 }
 .btn-danger:hover:not(:disabled) {
-  background-color: rgba(255, 69, 58, 0.1);
+  background-color: rgba(221, 94, 86, 0.1);
 }
 
 /* Form Styles */
@@ -170,11 +170,11 @@ a {
 }
 .badge.win {
   color: var(--accent);
-  background: rgba(0, 224, 84, 0.1);
+  background: rgba(82, 164, 154, 0.1);
 }
 .badge.loss {
   color: var(--danger);
-  background: rgba(255, 69, 58, 0.1);
+  background: rgba(221, 94, 86, 0.1);
 }
 
 /* Animations & UI Components */

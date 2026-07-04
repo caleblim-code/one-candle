@@ -197,9 +197,9 @@ export default function JournalClient({ accountId }: { accountId: string }) {
             {filteredTrades.map((trade: any) => (
               <React.Fragment key={trade.id}>
                 <tr 
-                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', backgroundColor: selectedIds.has(trade.id) ? 'rgba(0, 224, 84, 0.05)' : expandedId === trade.id ? 'var(--surface-light)' : 'transparent' }}
-                  onMouseOver={e => e.currentTarget.style.backgroundColor = selectedIds.has(trade.id) ? 'rgba(0, 224, 84, 0.08)' : 'var(--surface-light)'}
-                  onMouseOut={e => e.currentTarget.style.backgroundColor = selectedIds.has(trade.id) ? 'rgba(0, 224, 84, 0.05)' : expandedId === trade.id ? 'var(--surface-light)' : 'transparent'}
+                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', backgroundColor: selectedIds.has(trade.id) ? 'rgba(82, 164, 154, 0.05)' : expandedId === trade.id ? 'var(--surface-light)' : 'transparent' }}
+                  onMouseOver={e => e.currentTarget.style.backgroundColor = selectedIds.has(trade.id) ? 'rgba(82, 164, 154, 0.08)' : 'var(--surface-light)'}
+                  onMouseOut={e => e.currentTarget.style.backgroundColor = selectedIds.has(trade.id) ? 'rgba(82, 164, 154, 0.05)' : expandedId === trade.id ? 'var(--surface-light)' : 'transparent'}
                 >
                   <td style={{ padding: '1rem', width: '40px' }} onClick={e => e.stopPropagation()}>
                     <input

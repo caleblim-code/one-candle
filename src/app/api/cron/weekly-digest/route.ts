@@ -84,7 +84,7 @@ export async function GET(req: Request) {
             <div style="display: flex; justify-content: space-between; margin-top: 20px; margin-bottom: 30px; flex-wrap: wrap;">
               <div style="flex: 1; min-width: 120px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; text-align: center; margin: 5px;">
                 <div style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Weekly P&L</div>
-                <div style="font-size: 24px; font-weight: bold; color: ${isProfitable ? '#00e054' : '#ff453a'}; margin-top: 8px;">
+                <div style="font-size: 24px; font-weight: bold; color: ${isProfitable ? '#52A49A' : '#DD5E56'}; margin-top: 8px;">
                   ${isProfitable ? '+' : ''}$${Math.abs(totalPnl).toFixed(2)}
                 </div>
               </div>
@@ -107,8 +107,8 @@ export async function GET(req: Request) {
             ${bestTrade.pnl! > 0 ? `
             <div style="margin-bottom: 15px;">
               <div style="font-size: 13px; color: #666; margin-bottom: 4px;">🏆 Best Trade</div>
-              <div style="background-color: rgba(0, 224, 84, 0.1); padding: 12px; border-radius: 6px; border-left: 4px solid #00e054;">
-                <strong>${bestTrade.ticker}</strong> (${bestTrade.direction}) &rarr; <span style="color: #00e054; font-weight: bold;">+$${bestTrade.pnl?.toFixed(2)}</span>
+              <div style="background-color: rgba(82, 164, 154, 0.1); padding: 12px; border-radius: 6px; border-left: 4px solid #52A49A;">
+                <strong>${bestTrade.ticker}</strong> (${bestTrade.direction}) &rarr; <span style="color: #52A49A; font-weight: bold;">+$${bestTrade.pnl?.toFixed(2)}</span>
                 <div style="font-size: 12px; color: #555; margin-top: 4px;">Closed on ${bestTrade.exitDate?.toLocaleDateString()}</div>
               </div>
             </div>
@@ -117,8 +117,8 @@ export async function GET(req: Request) {
             ${worstTrade.pnl! < 0 ? `
             <div style="margin-bottom: 15px;">
               <div style="font-size: 13px; color: #666; margin-bottom: 4px;">📉 Worst Trade</div>
-              <div style="background-color: rgba(255, 69, 58, 0.1); padding: 12px; border-radius: 6px; border-left: 4px solid #ff453a;">
-                <strong>${worstTrade.ticker}</strong> (${worstTrade.direction}) &rarr; <span style="color: #ff453a; font-weight: bold;">-$${Math.abs(worstTrade.pnl!).toFixed(2)}</span>
+              <div style="background-color: rgba(221, 94, 86, 0.1); padding: 12px; border-radius: 6px; border-left: 4px solid #DD5E56;">
+                <strong>${worstTrade.ticker}</strong> (${worstTrade.direction}) &rarr; <span style="color: #DD5E56; font-weight: bold;">-$${Math.abs(worstTrade.pnl!).toFixed(2)}</span>
                 <div style="font-size: 12px; color: #555; margin-top: 4px;">Closed on ${worstTrade.exitDate?.toLocaleDateString()}</div>
               </div>
             </div>

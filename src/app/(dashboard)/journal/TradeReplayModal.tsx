@@ -99,7 +99,7 @@ export default function TradeReplayModal({ trade, onClose }: TradeReplayModalPro
   };
 
   const isWin = trade.pnl && trade.pnl > 0;
-  const lineColor = isWin ? '#00e054' : '#ff453a';
+  const lineColor = isWin ? '#52A49A' : '#DD5E56';
 
   // Calculate Y-axis domain to include stop loss and take profit if they exist
   const allPrices = fullPath.map(p => p.price);
@@ -164,10 +164,10 @@ export default function TradeReplayModal({ trade, onClose }: TradeReplayModalPro
                 />
                 
                 {trade.takeProfit && (
-                  <ReferenceLine y={trade.takeProfit} stroke="#00e054" strokeDasharray="5 5" label={{ position: 'insideTopLeft', value: 'Take Profit', fill: '#00e054', fontSize: 12 }} />
+                  <ReferenceLine y={trade.takeProfit} stroke="#52A49A" strokeDasharray="5 5" label={{ position: 'insideTopLeft', value: 'Take Profit', fill: '#52A49A', fontSize: 12 }} />
                 )}
                 {trade.stopLoss && (
-                  <ReferenceLine y={trade.stopLoss} stroke="#ff453a" strokeDasharray="5 5" label={{ position: 'insideBottomLeft', value: 'Stop Loss', fill: '#ff453a', fontSize: 12 }} />
+                  <ReferenceLine y={trade.stopLoss} stroke="#DD5E56" strokeDasharray="5 5" label={{ position: 'insideBottomLeft', value: 'Stop Loss', fill: '#DD5E56', fontSize: 12 }} />
                 )}
                 {trade.entryPrice && (
                   <ReferenceLine y={trade.entryPrice} stroke="#888" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'Entry', fill: '#888', fontSize: 12 }} />

@@ -288,7 +288,7 @@ export default function AddTradePage() {
         </div>
       </div>
       
-      {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
+      {error && <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
 
       {dailyWarning && (
         <div className="card" style={{ backgroundColor: 'rgba(255, 171, 0, 0.1)', border: '1px solid var(--warning)', marginBottom: '2rem', padding: '1rem' }}>
@@ -339,8 +339,8 @@ export default function AddTradePage() {
               <div className="form-group">
                 <label className="form-label">Direction</label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => setFormData({...formData, direction: 'Long'})} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: formData.direction === 'Long' ? '1px solid var(--accent)' : '1px solid var(--border)', backgroundColor: formData.direction === 'Long' ? 'rgba(0, 224, 84, 0.1)' : 'transparent', color: formData.direction === 'Long' ? 'var(--accent)' : 'var(--text-main)', cursor: 'pointer', fontWeight: 600 }}>Long</button>
-                  <button type="button" onClick={() => setFormData({...formData, direction: 'Short'})} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: formData.direction === 'Short' ? '1px solid var(--danger)' : '1px solid var(--border)', backgroundColor: formData.direction === 'Short' ? 'rgba(255, 69, 58, 0.1)' : 'transparent', color: formData.direction === 'Short' ? 'var(--danger)' : 'var(--text-main)', cursor: 'pointer', fontWeight: 600 }}>Short</button>
+                  <button type="button" onClick={() => setFormData({...formData, direction: 'Long'})} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: formData.direction === 'Long' ? '1px solid var(--accent)' : '1px solid var(--border)', backgroundColor: formData.direction === 'Long' ? 'rgba(82, 164, 154, 0.1)' : 'transparent', color: formData.direction === 'Long' ? 'var(--accent)' : 'var(--text-main)', cursor: 'pointer', fontWeight: 600 }}>Long</button>
+                  <button type="button" onClick={() => setFormData({...formData, direction: 'Short'})} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: formData.direction === 'Short' ? '1px solid var(--danger)' : '1px solid var(--border)', backgroundColor: formData.direction === 'Short' ? 'rgba(221, 94, 86, 0.1)' : 'transparent', color: formData.direction === 'Short' ? 'var(--danger)' : 'var(--text-main)', cursor: 'pointer', fontWeight: 600 }}>Short</button>
                 </div>
               </div>
 

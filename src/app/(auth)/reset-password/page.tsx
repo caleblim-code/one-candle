@@ -60,7 +60,7 @@ function ResetPasswordForm() {
   if (!token && status !== 'success') {
     return (
       <div style={{ textAlign: 'center' }}>
-        <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+        <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
           Invalid or missing reset link.
         </div>
         <Link href="/forgot-password" className="btn btn-primary" style={{ width: '100%' }}>Request New Link</Link>
@@ -72,14 +72,14 @@ function ResetPasswordForm() {
     <>
       {status === 'success' ? (
         <div style={{ textAlign: 'center' }}>
-          <div style={{ backgroundColor: 'rgba(0, 210, 75, 0.1)', color: 'var(--success)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+          <div style={{ backgroundColor: 'rgba(82, 164, 154, 0.1)', color: 'var(--success)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
             Your password has been reset successfully!
           </div>
           <Link href="/login" className="btn btn-primary" style={{ width: '100%' }}>Log In Now</Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
-          {status === 'error' && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{message}</div>}
+          {status === 'error' && <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{message}</div>}
 
           <div className="form-group">
             <label className="form-label">New Password</label>

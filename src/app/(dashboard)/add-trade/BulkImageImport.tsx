@@ -313,7 +313,7 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
         Bulk OCR Image Import
       </h3>
 
-      {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
+      {error && <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
 
       {step === 1 && (
         <div className="animate-slide-up">
@@ -425,7 +425,7 @@ export default function BulkImageImport({ accounts, playbooks = [], setupTagsLis
                            </select>
                         </div>
                      </div>
-                     {!row._isValid && <span className="text-danger" style={{ fontSize: '0.8rem', backgroundColor: 'rgba(255, 69, 58, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>{row._errors.join(', ')}</span>}
+                     {!row._isValid && <span className="text-danger" style={{ fontSize: '0.8rem', backgroundColor: 'rgba(221, 94, 86, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>{row._errors.join(', ')}</span>}
                   </div>
                   
                   {/* Grid of details */}

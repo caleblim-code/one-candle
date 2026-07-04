@@ -60,9 +60,9 @@ export default function InsightsClient() {
 
   const getSeverityBg = (severity: string) => {
     switch (severity) {
-      case 'positive': return 'rgba(0, 224, 84, 0.1)';
-      case 'negative': return 'rgba(255, 69, 58, 0.1)';
-      default: return 'rgba(0, 224, 84, 0.1)';
+      case 'positive': return 'rgba(82, 164, 154, 0.1)';
+      case 'negative': return 'rgba(221, 94, 86, 0.1)';
+      default: return 'rgba(82, 164, 154, 0.1)';
     }
   };
 

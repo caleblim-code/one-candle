@@ -382,12 +382,12 @@
 }
 
 .psIconRed {
-    background-color: rgba(255, 69, 58, 0.1);
+    background-color: rgba(221, 94, 86, 0.1);
     color: var(--danger);
 }
 
 .psIconGreen {
-    background-color: rgba(0, 224, 84, 0.1);
+    background-color: rgba(82, 164, 154, 0.1);
     color: var(--accent);
 }
 
@@ -414,8 +414,8 @@
 
 .featureCard:hover {
     transform: translateY(-5px);
-    border-color: rgba(0, 224, 84, 0.3);
-    background-color: rgba(0, 224, 84, 0.05);
+    border-color: rgba(82, 164, 154, 0.3);
+    background-color: rgba(82, 164, 154, 0.05);
     box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
 }
 
@@ -608,7 +608,7 @@
 .toggleKnobAnnual { transform: translateX(28px); }
 
 .saveBadge {
-    background-color: rgba(0, 224, 84, 0.1);
+    background-color: rgba(82, 164, 154, 0.1);
     color: var(--accent);
     padding: 0.25rem 0.75rem;
     border-radius: 100px;
@@ -640,7 +640,7 @@
 
 .priceCardPopular {
     border-color: var(--accent);
-    box-shadow: 0 0 30px rgba(0, 224, 84, 0.1);
+    box-shadow: 0 0 30px rgba(82, 164, 154, 0.1);
     background-color: var(--surface-light);
 }
 
@@ -719,7 +719,7 @@
     position: absolute;
     width: 800px;
     height: 800px;
-    background: radial-gradient(circle, rgba(0,224,84,0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(82, 164, 154,0.1) 0%, transparent 70%);
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;

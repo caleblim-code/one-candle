@@ -227,7 +227,7 @@ export default function CsvImport({ accounts }: { accounts: any[] }) {
         Bulk Import CSV
       </h3>
 
-      {error && <div style={{ backgroundColor: 'rgba(255, 69, 58, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
+      {error && <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>{error}</div>}
 
       {/* STEP 1: UPLOAD */}
       {step === 1 && (
@@ -317,7 +317,7 @@ export default function CsvImport({ accounts }: { accounts: any[] }) {
               </thead>
               <tbody>
                 {parsedRows.map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--border)', backgroundColor: row._isValid ? 'transparent' : 'rgba(255, 69, 58, 0.05)', opacity: selectedRows.has(i) ? 1 : 0.5 }}>
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border)', backgroundColor: row._isValid ? 'transparent' : 'rgba(221, 94, 86, 0.05)', opacity: selectedRows.has(i) ? 1 : 0.5 }}>
                     <td style={{ padding: '0.75rem' }}>
                       <input 
                         type="checkbox" 

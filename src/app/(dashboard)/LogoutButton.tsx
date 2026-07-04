@@ -40,7 +40,7 @@ export default function LogoutButton() {
         opacity: isLoggingOut ? 0.7 : 1,
         transition: 'all 150ms ease',
       }}
-      onMouseOver={(e) => !isLoggingOut && (e.currentTarget.style.backgroundColor = 'rgba(255, 69, 58, 0.1)')}
+      onMouseOver={(e) => !isLoggingOut && (e.currentTarget.style.backgroundColor = 'rgba(221, 94, 86, 0.1)')}
       onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
     >
       {isLoggingOut && <span className="spinner" style={{ width: '14px', height: '14px', borderWidth: '1.5px' }} />}

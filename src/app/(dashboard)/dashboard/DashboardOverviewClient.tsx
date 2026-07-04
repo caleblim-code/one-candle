@@ -262,7 +262,7 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
                   borderRadius: '12px', 
                   fontSize: '0.8rem', 
                   fontWeight: 600, 
-                  backgroundColor: insight.severity === 'negative' ? 'rgba(255, 69, 58, 0.1)' : 'rgba(0, 224, 84, 0.1)',
+                  backgroundColor: insight.severity === 'negative' ? 'rgba(221, 94, 86, 0.1)' : 'rgba(82, 164, 154, 0.1)',
                   color: insight.severity === 'negative' ? 'var(--danger)' : 'var(--success)'
                 }}>
                   {insight.stat}

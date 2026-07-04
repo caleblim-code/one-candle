@@ -315,7 +315,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     return { pnl, daysWithTrades };
   }, [calendarData, calendarViewDate]);
 
-  const COLORS = ['#00E054', '#FF453A'];
+  const COLORS = ['#52A49A', '#DD5E56'];
 
   const CustomTooltip = ({ active, payload, label, formatterType }: any) => {
     if (active && payload && payload.length) {
