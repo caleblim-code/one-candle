@@ -101,7 +101,7 @@ export default function SidebarNav() {
         TradingView
       </a>
       <a 
-        href="https://www.forexfactory.com/calendar" 
+        href="https://www.forexfactory.com/calendar?day=today" 
         target="_blank" 
         rel="noopener noreferrer" 
         style={{ ...linkStyle, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}
