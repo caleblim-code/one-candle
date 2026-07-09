@@ -112,11 +112,17 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
   // 3. Chart Data Preparations
   const equityData = useMemo(() => {
     let cumulative = 0;
-    return trades.map((t: any, i: number) => {
+    const sortedTrades = [...trades].sort((a, b) => {
+      const dateA = a.exitDate ? new Date(a.exitDate).getTime() : new Date(a.entryDate).getTime();
+      const dateB = b.exitDate ? new Date(b.exitDate).getTime() : new Date(b.entryDate).getTime();
+      return dateA - dateB;
+    });
+    return sortedTrades.map((t: any, i: number) => {
       cumulative += (t.pnl || 0);
+      const displayDate = t.exitDate ? t.exitDate : t.entryDate;
       return {
         name: `Trade ${i + 1}`,
-        date: new Date(t.entryDate).toLocaleDateString(),
+        date: new Date(displayDate).toLocaleDateString(),
         equity: cumulative,
         pnl: t.pnl || 0
       };

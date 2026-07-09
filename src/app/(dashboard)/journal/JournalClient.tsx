@@ -14,6 +14,7 @@ export default function JournalClient({ accountId }: { accountId: string }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAsset, setFilterAsset] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'entryDate', direction: 'desc' });
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -35,12 +36,35 @@ export default function JournalClient({ accountId }: { accountId: string }) {
   const serverTrades = data.trades || [];
   const totalPages = data.totalPages || 1;
 
-  // Client side filters (filtering current page only for now, sufficient for phase 1)
   const filteredTrades = serverTrades.filter((t: any) => {
     const matchesSearch = t.ticker.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAsset = filterAsset === 'All' || t.assetClass === filterAsset;
     const matchesStatus = filterStatus === 'All' || t.status === filterStatus;
     return matchesSearch && matchesAsset && matchesStatus;
+  });
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedTrades = [...filteredTrades].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    let aVal = a[key];
+    let bVal = b[key];
+    
+    if (key === 'entryDate' || key === 'exitDate') {
+      aVal = aVal ? new Date(aVal).getTime() : 0;
+      bVal = bVal ? new Date(bVal).getTime() : 0;
+    }
+    
+    if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+    return 0;
   });
 
   // --- Single Delete ---
@@ -177,24 +201,36 @@ export default function JournalClient({ accountId }: { accountId: string }) {
               <th style={{ padding: '1rem', width: '40px' }}>
                 <input
                   type="checkbox"
-                  checked={filteredTrades.length > 0 && filteredTrades.every((t: any) => selectedIds.has(t.id))}
+                  checked={sortedTrades.length > 0 && sortedTrades.every((t: any) => selectedIds.has(t.id))}
                   onChange={toggleSelectAll}
                   style={{ width: '16px', height: '16px', accentColor: 'var(--accent)', cursor: 'pointer' }}
                 />
               </th>
-              <th style={{ padding: '1rem' }}>Entry Date</th>
-              <th style={{ padding: '1rem' }}>Exit Date</th>
-              <th style={{ padding: '1rem' }}>Ticker</th>
-              <th style={{ padding: '1rem' }}>Direction</th>
+              <th style={{ padding: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('entryDate')}>
+                Entry Date {sortConfig?.key === 'entryDate' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => handleSort('exitDate')}>
+                Exit Date {sortConfig?.key === 'exitDate' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer' }} onClick={() => handleSort('ticker')}>
+                Ticker {sortConfig?.key === 'ticker' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer' }} onClick={() => handleSort('direction')}>
+                Direction {sortConfig?.key === 'direction' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
               <th style={{ padding: '1rem' }}>Entry</th>
               <th style={{ padding: '1rem' }}>Exit</th>
               <th style={{ padding: '1rem' }}>Size</th>
-              <th style={{ padding: '1rem' }}>P&L</th>
-              <th style={{ padding: '1rem' }}>Status</th>
+              <th style={{ padding: '1rem', cursor: 'pointer' }} onClick={() => handleSort('pnl')}>
+                P&L {sortConfig?.key === 'pnl' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
+              <th style={{ padding: '1rem', cursor: 'pointer' }} onClick={() => handleSort('status')}>
+                Status {sortConfig?.key === 'status' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {filteredTrades.map((trade: any) => (
+            {sortedTrades.map((trade: any) => (
               <React.Fragment key={trade.id}>
                 <tr 
                   style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', backgroundColor: selectedIds.has(trade.id) ? 'rgba(82, 164, 154, 0.05)' : expandedId === trade.id ? 'var(--surface-light)' : 'transparent' }}

@@ -23,10 +23,16 @@ export async function GET(req: Request) {
     });
 
     // 2. Get minimal data for stats and charting
-    const closedTradesPromise = prisma.trade.findMany({
+    const closedTradesRaw = await prisma.trade.findMany({
       where: { ...whereClause, status: 'Closed' },
-      select: { pnl: true, entryDate: true },
-      orderBy: { entryDate: 'asc' },
+      select: { pnl: true, entryDate: true, exitDate: true },
+    });
+    
+    // Sort by exitDate (fallback to entryDate if null)
+    const closedTrades = closedTradesRaw.sort((a, b) => {
+      const dateA = a.exitDate ? a.exitDate.getTime() : a.entryDate.getTime();
+      const dateB = b.exitDate ? b.exitDate.getTime() : b.entryDate.getTime();
+      return dateA - dateB;
     });
 
     // 3. Get total trades count
@@ -34,9 +40,8 @@ export async function GET(req: Request) {
       where: whereClause,
     });
 
-    const [recentTrades, closedTrades, totalTrades] = await Promise.all([
+    const [recentTrades, totalTrades] = await Promise.all([
       recentTradesPromise,
-      closedTradesPromise,
       totalTradesPromise,
     ]);
 
@@ -52,8 +57,9 @@ export async function GET(req: Request) {
     let currentEquity = 0;
     const chartData = closedTrades.map(t => {
       currentEquity += (t.pnl || 0);
+      const displayDate = t.exitDate ? t.exitDate : t.entryDate;
       return {
-        date: new Date(t.entryDate).toLocaleDateString(),
+        date: new Date(displayDate).toLocaleDateString(),
         equity: currentEquity,
         pnl: t.pnl || 0
       };
