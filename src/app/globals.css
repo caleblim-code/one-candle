@@ -84,7 +84,7 @@ a {
 
 .btn-primary {
   background-color: var(--accent);
-  color: #000;
+  color: #FFFFFF;
   box-shadow: 0 4px 14px var(--accent-glow);
 }
 
