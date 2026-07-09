@@ -138,6 +138,14 @@ export default function LandingPage() {
 
   return (
     <>
+      {/* Ambient Animated Background */}
+      <div className={s.ambientBg}>
+        <div className={`${s.ambientOrb} ${s.ambientOrb1}`}></div>
+        <div className={`${s.ambientOrb} ${s.ambientOrb2}`}></div>
+        <div className={`${s.ambientOrb} ${s.ambientOrb3}`}></div>
+        <div className={`${s.ambientOrb} ${s.ambientOrb4}`}></div>
+      </div>
+
       {/* Nav */}
       <nav className={`${s.nav} ${scrolled ? s.navScrolled : ''}`}>
         <div className={`${s.container} ${s.navContent}`}>
@@ -159,8 +167,15 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className={s.hero}>
-        <div className={s.heroBlobPrimary}></div>
-        <div className={s.heroBlobAccent}></div>
+        {/* Candlestick Watermark */}
+        <svg className={s.candlestickWatermark} width="180" height="320" viewBox="0 0 180 320" fill="#52A49A">
+          <rect x="10" y="80" width="12" height="160" rx="2" /><rect x="14" y="40" width="4" height="240" rx="1" />
+          <rect x="40" y="120" width="12" height="100" rx="2" /><rect x="44" y="100" width="4" height="160" rx="1" />
+          <rect x="70" y="60" width="12" height="140" rx="2" /><rect x="74" y="20" width="4" height="220" rx="1" />
+          <rect x="100" y="100" width="12" height="120" rx="2" /><rect x="104" y="70" width="4" height="200" rx="1" />
+          <rect x="130" y="50" width="12" height="180" rx="2" /><rect x="134" y="10" width="4" height="260" rx="1" />
+          <rect x="160" y="90" width="12" height="130" rx="2" /><rect x="164" y="60" width="4" height="200" rx="1" />
+        </svg>
         <div className={s.container}>
           <h1 className={`${s.heroTitle} ${s.reveal}`} ref={addRevealRef}>Stop Guessing.<br/>Start Trading With Data.</h1>
           <p className={`${s.subheadline} ${s.reveal}`} ref={addRevealRef}>The all-in-one trading journal that syncs your broker, analyzes every trade, and tells you exactly where you&apos;re losing money.</p>

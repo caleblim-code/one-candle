@@ -6,6 +6,109 @@
     padding: 0 2rem;
 }
 
+/* Ambient Animated Background */
+.ambientBg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    background-color: #F7F8FA;
+}
+
+.ambientOrb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    will-change: transform;
+    pointer-events: none;
+}
+
+.ambientOrb1 {
+    width: 700px;
+    height: 700px;
+    background: #52A49A;
+    opacity: 0.10;
+    top: -10%;
+    right: -5%;
+    animation: orbDrift1 55s ease-in-out infinite;
+}
+
+.ambientOrb2 {
+    width: 600px;
+    height: 600px;
+    background: #1B3A4B;
+    opacity: 0.08;
+    bottom: 20%;
+    left: -10%;
+    animation: orbDrift2 65s ease-in-out infinite;
+}
+
+.ambientOrb3 {
+    width: 500px;
+    height: 500px;
+    background: #52A49A;
+    opacity: 0.06;
+    top: 40%;
+    right: 15%;
+    animation: orbDrift3 45s ease-in-out infinite;
+}
+
+.ambientOrb4 {
+    width: 550px;
+    height: 550px;
+    background: #1B3A4B;
+    opacity: 0.07;
+    top: 60%;
+    left: 20%;
+    animation: orbDrift4 70s ease-in-out infinite;
+}
+
+@keyframes orbDrift1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-80px, 60px) scale(1.1); }
+    50% { transform: translate(-40px, 120px) scale(0.95); }
+    75% { transform: translate(60px, 40px) scale(1.05); }
+}
+
+@keyframes orbDrift2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(100px, -50px) scale(1.08); }
+    50% { transform: translate(60px, -100px) scale(0.92); }
+    75% { transform: translate(-40px, -60px) scale(1.03); }
+}
+
+@keyframes orbDrift3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-70px, -80px) scale(1.12); }
+    66% { transform: translate(50px, 60px) scale(0.9); }
+}
+
+@keyframes orbDrift4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    20% { transform: translate(60px, 40px) scale(1.05); }
+    50% { transform: translate(-50px, 80px) scale(0.93); }
+    80% { transform: translate(30px, -40px) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ambientOrb { animation: none !important; }
+}
+
+/* Candlestick Watermark */
+.candlestickWatermark {
+    position: absolute;
+    right: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.05;
+    z-index: 0;
+    pointer-events: none;
+}
+
 /* Nav */
 .nav {
     position: fixed;
@@ -76,38 +179,7 @@
     padding-top: 10rem;
     padding-bottom: 4rem;
     text-align: center;
-    overflow: hidden;
-    background-color: #F8F9FA;
-    background-image: radial-gradient(#d1d5db 1px, transparent 0);
-    background-size: 24px 24px;
-}
-
-.heroBlobPrimary {
-    position: absolute;
-    width: 800px;
-    height: 800px;
-    background: var(--accent);
-    top: -150px;
-    right: -100px;
-    border-radius: 50%;
-    opacity: 0.08;
-    filter: blur(120px);
-    z-index: 0;
-    pointer-events: none;
-}
-
-.heroBlobAccent {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    background: var(--danger);
-    bottom: -150px;
-    left: -100px;
-    border-radius: 50%;
-    opacity: 0.05;
-    filter: blur(120px);
-    z-index: 0;
-    pointer-events: none;
+    overflow: visible;
 }
 
 .heroTitle {
@@ -408,10 +480,10 @@
 }
 
 /* Problem Solution & Features alternating backgrounds */
-.problemSolution { padding: 6rem 0; background-color: #FFFFFF; }
+.problemSolution { padding: 6rem 0; }
 
 /* Features */
-.features { padding: 6rem 0; background-color: #F0F7F6; }
+.features { padding: 6rem 0; }
 .sectionHeader { text-align: center; margin-bottom: 4rem; }
 .sectionHeader h2 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.01em; line-height: 1.2; font-weight: 700; }
 
@@ -455,7 +527,7 @@
 .fDesc { color: var(--text-muted); font-size: 0.95rem; }
 
 /* Analytics Dashboard Preview */
-.analyticsPreview { padding: 6rem 0; background-color: #EEF4F3; }
+.analyticsPreview { padding: 6rem 0; }
 
 .liveDash {
     background-color: var(--surface);
@@ -553,21 +625,7 @@
 /* Testimonials */
 .testimonials { 
     padding: 6rem 0; 
-    background-color: #F0F7F6;
     position: relative;
-    overflow: hidden;
-}
-
-.testimonials::before {
-    content: '"';
-    position: absolute;
-    font-size: 40rem;
-    color: var(--accent);
-    opacity: 0.05;
-    top: -10rem;
-    left: -5rem;
-    font-family: serif;
-    pointer-events: none;
 }
 
 .testiGrid {

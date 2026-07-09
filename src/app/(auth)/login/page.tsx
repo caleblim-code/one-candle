@@ -40,9 +40,8 @@ export default function LoginPage() {
   return (
     <div className="auth-card">
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        {/* Logo is now in layout left panel on desktop, but let's keep a mobile logo here */}
-        <h1 className="mobile-only" style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
-        <h2 className="desktop-only" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Welcome Back</h2>
+        <h1 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Welcome Back</h2>
         <p className="text-muted">Log in to your journal.</p>
       </div>
       

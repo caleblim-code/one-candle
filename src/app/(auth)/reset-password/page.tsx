@@ -121,8 +121,8 @@ export default function ResetPassword() {
   return (
     <div className="auth-card animate-fade-in">
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 className="mobile-only" style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
-        <h2 className="desktop-only" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Set New Password</h2>
+        <h1 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Set New Password</h2>
         <p className="text-muted">Create a new password</p>
       </div>
       <Suspense fallback={<div style={{ textAlign: 'center' }}>Loading...</div>}>
