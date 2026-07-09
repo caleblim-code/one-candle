@@ -151,11 +151,24 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={activeChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                    itemStyle={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div style={{ backgroundColor: 'var(--surface)', padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                            <p className="text-muted" style={{ marginBottom: '0.25rem', fontSize: '0.8rem' }}>
+                              {payload[0].payload.name} ({payload[0].payload.date})
+                            </p>
+                            <p className="mono fw-bold" style={{ color: 'var(--accent)' }}>
+                              ${Number(payload[0].value).toFixed(2)}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
                   <Line type="monotone" dataKey="equity" stroke="var(--accent)" strokeWidth={3} dot={false} activeDot={{ r: 8 }} />
                 </LineChart>

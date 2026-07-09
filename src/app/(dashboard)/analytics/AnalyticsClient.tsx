@@ -327,7 +327,9 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     if (active && payload && payload.length) {
       return (
         <div style={{ backgroundColor: 'var(--surface)', padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '8px' }}>
-          <p className="text-muted" style={{ marginBottom: '0.25rem', fontSize: '0.8rem' }}>{label || payload[0].payload.name || payload[0].payload.date}</p>
+          <p className="text-muted" style={{ marginBottom: '0.25rem', fontSize: '0.8rem' }}>
+            {payload[0].payload.name ? `${payload[0].payload.name} (${payload[0].payload.date || label})` : (label || payload[0].payload.date)}
+          </p>
           <p className="mono fw-bold" style={{ color: payload[0].value >= 0 ? 'var(--accent)' : (formatterType === 'percent' ? 'var(--accent)' : 'var(--danger)') }}>
             {formatterType === 'percent' ? `${payload[0].value.toFixed(1)}%` : `$${payload[0].value.toFixed(2)}`}
           </p>

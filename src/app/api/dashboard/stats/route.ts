@@ -55,10 +55,11 @@ export async function GET(req: Request) {
     const averageLoss = losingTrades.length > 0 ? losingTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / losingTrades.length : 0;
 
     let currentEquity = 0;
-    const chartData = closedTrades.map(t => {
+    const chartData = closedTrades.map((t, i) => {
       currentEquity += (t.pnl || 0);
       const displayDate = t.exitDate ? t.exitDate : t.entryDate;
       return {
+        name: `Trade ${i + 1}`,
         date: new Date(displayDate).toLocaleDateString(),
         equity: currentEquity,
         pnl: t.pnl || 0
