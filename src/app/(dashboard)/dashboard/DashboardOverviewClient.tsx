@@ -25,25 +25,25 @@ export default function DashboardOverviewClient({ accountId }: { accountId: stri
   const balanceChartData = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
     // Merge trades (from chartData) with transactions chronologically
-    const events: { date: string; sortDate: Date; pnl: number; txAmount: number }[] = [];
+    const events: { name: string; date: string; sortDate: Date; pnl: number; txAmount: number }[] = [];
     
     chartData.forEach((d: any) => {
-      events.push({ date: d.date, sortDate: new Date(d.date), pnl: d.pnl, txAmount: 0 });
+      events.push({ name: d.name, date: d.date, sortDate: new Date(d.date), pnl: d.pnl, txAmount: 0 });
     });
     
     (transactions || []).forEach((tx: any) => {
       const dateStr = new Date(tx.date).toLocaleDateString();
       const amt = tx.type === 'Deposit' ? tx.amount : -tx.amount;
-      events.push({ date: dateStr, sortDate: new Date(tx.date), pnl: 0, txAmount: amt });
+      events.push({ name: tx.type, date: dateStr, sortDate: new Date(tx.date), pnl: 0, txAmount: amt });
     });
     
     events.sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime());
     
     let equity = accountBalance || 0;
-    const result = [{ date: 'Start', equity: equity }];
+    const result = [{ name: 'Start', date: 'Start', equity: equity }];
     events.forEach(e => {
       equity += e.pnl + e.txAmount;
-      result.push({ date: e.date, equity });
+      result.push({ name: e.name, date: e.date, equity });
     });
     return result;
   }, [chartData, transactions, accountBalance]);
