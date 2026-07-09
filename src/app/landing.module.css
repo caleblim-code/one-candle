@@ -71,26 +71,42 @@
     transform: translateY(0);
 }
 
-/* Hero */
 .hero {
     position: relative;
     padding-top: 10rem;
     padding-bottom: 4rem;
     text-align: center;
     overflow: hidden;
+    background-color: #F8F9FA;
+    background-image: radial-gradient(#d1d5db 1px, transparent 0);
+    background-size: 24px 24px;
 }
 
-.heroBlob {
+.heroBlobPrimary {
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    background: var(--accent);
+    top: -150px;
+    right: -100px;
+    border-radius: 50%;
+    opacity: 0.08;
+    filter: blur(120px);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.heroBlobAccent {
     position: absolute;
     width: 600px;
     height: 600px;
-    background: var(--accent);
-    top: -200px;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0.15;
+    background: var(--danger);
+    bottom: -150px;
+    left: -100px;
+    border-radius: 50%;
+    opacity: 0.05;
     filter: blur(120px);
-    z-index: -1;
+    z-index: 0;
     pointer-events: none;
 }
 
@@ -391,8 +407,11 @@
     color: var(--accent);
 }
 
+/* Problem Solution & Features alternating backgrounds */
+.problemSolution { padding: 6rem 0; background-color: #FFFFFF; }
+
 /* Features */
-.features { padding: 6rem 0; }
+.features { padding: 6rem 0; background-color: #F0F7F6; }
 .sectionHeader { text-align: center; margin-bottom: 4rem; }
 .sectionHeader h2 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.01em; line-height: 1.2; font-weight: 700; }
 
@@ -436,14 +455,14 @@
 .fDesc { color: var(--text-muted); font-size: 0.95rem; }
 
 /* Analytics Dashboard Preview */
-.analyticsPreview { padding: 6rem 0; }
+.analyticsPreview { padding: 6rem 0; background-color: #EEF4F3; }
 
 .liveDash {
     background-color: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 12px;
+    box-shadow: 0 8px 48px rgba(82,164,154,0.08);
     overflow: hidden;
-    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.1);
 }
 
 .ldHeader {
@@ -532,7 +551,24 @@
 .loss { color: var(--danger); }
 
 /* Testimonials */
-.testimonials { padding: 6rem 0; }
+.testimonials { 
+    padding: 6rem 0; 
+    background-color: #F0F7F6;
+    position: relative;
+    overflow: hidden;
+}
+
+.testimonials::before {
+    content: '"';
+    position: absolute;
+    font-size: 40rem;
+    color: var(--accent);
+    opacity: 0.05;
+    top: -10rem;
+    left: -5rem;
+    font-family: serif;
+    pointer-events: none;
+}
 
 .testiGrid {
     display: grid;
@@ -542,10 +578,10 @@
 
 .testiCard {
     background-color: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    padding: 2.5rem;
+    padding: 2rem;
     border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 48px rgba(82,164,154,0.08);
 }
 
 .testiQuote {
@@ -710,24 +746,31 @@
     padding: 8rem 0;
     text-align: center;
     position: relative;
+    background-color: var(--accent);
+    color: #FFFFFF;
     overflow: hidden;
-    background-color: var(--surface);
-    border-top: 1px solid var(--border);
 }
 
-.ctaBlob {
+.finalCtaHighlight {
     position: absolute;
-    width: 800px;
-    height: 800px;
-    background: radial-gradient(circle, rgba(82, 164, 154,0.1) 0%, transparent 70%);
-    top: 50%; left: 50%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
+    z-index: 0;
 }
 
-.finalCta h2 { max-width: 800px; margin: 0 auto 1.5rem; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.2; font-weight: 700; }
-.finalCta p { max-width: 600px; margin: 0 auto 2.5rem; color: var(--text-muted); font-size: 1.1rem; }
-.ctaSmall { display: block; margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+.finalCtaContent {
+    position: relative;
+    z-index: 1;
+}
+
+.finalCta h2 { max-width: 800px; margin: 0 auto 1.5rem; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.2; font-weight: 700; color: #FFFFFF; }
+.finalCta p { max-width: 600px; margin: 0 auto 2.5rem; color: rgba(255,255,255,0.9); font-size: 1.1rem; }
+.ctaSmall { display: block; margin-top: 1rem; font-size: 0.85rem; color: rgba(255,255,255,0.8); }
 
 /* Footer */
 .footer {

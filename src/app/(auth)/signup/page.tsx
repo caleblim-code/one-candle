@@ -49,14 +49,14 @@ export default function SignupPage() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
-          <p className="text-muted">Create your trading journal account.</p>
-        </div>
-        
-        {error && <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{error}</div>}
+    <div className="auth-card">
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1 className="mobile-only" style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
+        <h2 className="desktop-only" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create Account</h2>
+        <p className="text-muted">Start your trading journal journey.</p>
+      </div>
+      
+      {error && <div style={{ backgroundColor: 'rgba(221, 94, 86, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{error}</div>}
 
         <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
         <form onSubmit={handleSignup}>
@@ -115,9 +115,8 @@ export default function SignupPage() {
 
         <div style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.9rem' }}>
           <span className="text-muted">Already have an account? </span>
-          <Link href="/login" style={{ color: 'var(--accent)', fontWeight: '600' }}>Log in</Link>
+          <Link href="/login" style={{ color: 'var(--accent)', fontWeight: '600' }} className="auth-link">Log in</Link>
         </div>
       </div>
-    </div>
   );
 }

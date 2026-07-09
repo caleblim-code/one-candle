@@ -159,7 +159,8 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className={s.hero}>
-        <div className={s.heroBlob}></div>
+        <div className={s.heroBlobPrimary}></div>
+        <div className={s.heroBlobAccent}></div>
         <div className={s.container}>
           <h1 className={`${s.heroTitle} ${s.reveal}`} ref={addRevealRef}>Stop Guessing.<br/>Start Trading With Data.</h1>
           <p className={`${s.subheadline} ${s.reveal}`} ref={addRevealRef}>The all-in-one trading journal that syncs your broker, analyzes every trade, and tells you exactly where you&apos;re losing money.</p>
@@ -403,14 +404,13 @@ export default function LandingPage() {
         ))}
       </section>
 
-      {/* Final CTA */}
       <section className={`${s.finalCta} ${s.reveal}`} ref={addRevealRef}>
-        <div className={s.ctaBlob}></div>
-        <div className={s.container}>
-          <h2>Your Next Profitable Trade Starts With Knowing Your Last One.</h2>
-          <p>Join 100,000+ traders who use OneCandle to turn data into discipline.</p>
-          <Link href="/signup" className="btn btn-primary" style={{ padding: '1.25rem 2.5rem', fontSize: '1.1rem' }}>Start Your Free Trial Today</Link>
-          <span className={s.ctaSmall}>No credit card required · Cancel anytime</span>
+        <div className={s.finalCtaHighlight}></div>
+        <div className={`${s.container} ${s.finalCtaContent}`}>
+          <h2>Ready to stop bleeding capital?</h2>
+          <p>Join the thousands of traders who have turned their performance around by identifying their exact leaks.</p>
+          <Link href="/signup" className="btn btn-primary" style={{ backgroundColor: '#FFFFFF', color: 'var(--accent)' }}>Start Your 7-Day Free Trial</Link>
+          <span className={s.ctaSmall}>No credit card required. Cancel anytime.</span>
         </div>
       </section>
 

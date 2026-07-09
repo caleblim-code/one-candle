@@ -119,16 +119,15 @@ function ResetPasswordForm() {
 
 export default function ResetPassword() {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
-          <p className="text-muted">Create a new password</p>
-        </div>
-        <Suspense fallback={<div style={{ textAlign: 'center' }}>Loading...</div>}>
-          <ResetPasswordForm />
-        </Suspense>
+    <div className="auth-card animate-fade-in">
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1 className="mobile-only" style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
+        <h2 className="desktop-only" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Set New Password</h2>
+        <p className="text-muted">Create a new password</p>
       </div>
+      <Suspense fallback={<div style={{ textAlign: 'center' }}>Loading...</div>}>
+        <ResetPasswordForm />
+      </Suspense>
     </div>
   );
 }

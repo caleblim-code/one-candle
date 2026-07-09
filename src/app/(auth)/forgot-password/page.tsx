@@ -35,12 +35,12 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
-          <p className="text-muted">Reset your password</p>
-        </div>
+    <div className="auth-card animate-fade-in">
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1 className="mobile-only" style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '2rem' }}>OneCandle</h1>
+        <h2 className="desktop-only" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Reset Password</h2>
+        <p className="text-muted">Enter your email to reset your password.</p>
+      </div>
         
         {status === 'success' ? (
           <div style={{ textAlign: 'center' }}>
@@ -75,11 +75,10 @@ export default function ForgotPassword() {
             </button>
 
             <div style={{ textAlign: 'center', fontSize: '0.9rem' }}>
-              <Link href="/login" style={{ color: 'var(--accent)', fontWeight: '600' }}>Back to log in</Link>
+              <Link href="/login" style={{ color: 'var(--accent)', fontWeight: '600' }} className="auth-link">Back to log in</Link>
             </div>
           </form>
         )}
-      </div>
     </div>
   );
 }
