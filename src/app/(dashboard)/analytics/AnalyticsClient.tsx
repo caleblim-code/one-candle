@@ -524,19 +524,48 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={activeEquityData} margin={{ left: -20 }}>
                 <defs>
-                  <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                  </linearGradient>
+                  {(() => {
+                    const total = activeEquityData.length;
+                    if (total <= 1 || maxDrawdown.value <= 0) {
+                      return (
+                        <>
+                          <linearGradient id="equityFillGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#52A49A" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#52A49A" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="equityStrokeGrad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#52A49A"/>
+                            <stop offset="100%" stopColor="#52A49A"/>
+                          </linearGradient>
+                        </>
+                      );
+                    }
+                    const ddStartPct = (maxDrawdown.start / (total - 1)) * 100;
+                    const ddEndPct = (maxDrawdown.end / (total - 1)) * 100;
+                    const pad = 0.5;
+                    return (
+                      <>
+                        <linearGradient id="equityFillGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset={`${Math.max(0, ddStartPct - pad)}%`} stopColor="#52A49A" stopOpacity={0.3}/>
+                          <stop offset={`${ddStartPct + pad}%`} stopColor="#DD5E56" stopOpacity={0.3}/>
+                          <stop offset={`${Math.max(ddStartPct + pad, ddEndPct - pad)}%`} stopColor="#DD5E56" stopOpacity={0.3}/>
+                          <stop offset={`${ddEndPct + pad}%`} stopColor="#52A49A" stopOpacity={0.3}/>
+                        </linearGradient>
+                        <linearGradient id="equityStrokeGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset={`${Math.max(0, ddStartPct - pad)}%`} stopColor="#52A49A"/>
+                          <stop offset={`${ddStartPct + pad}%`} stopColor="#DD5E56"/>
+                          <stop offset={`${Math.max(ddStartPct + pad, ddEndPct - pad)}%`} stopColor="#DD5E56"/>
+                          <stop offset={`${ddEndPct + pad}%`} stopColor="#52A49A"/>
+                        </linearGradient>
+                      </>
+                    );
+                  })()}
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="index" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} minTickGap={30} tickFormatter={(val) => activeEquityData[val]?.date || ''} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip content={<CustomTooltip />} />
-                {maxDrawdown.value > 0 && (
-                  <ReferenceArea x1={maxDrawdown.start} x2={maxDrawdown.end} y1={maxDrawdown.troughValue} y2={maxDrawdown.peakValue} strokeOpacity={0} fill="var(--danger)" fillOpacity={0.15} />
-                )}
-                <Area type="monotone" dataKey="equity" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEquity)" />
+                <Area type="monotone" dataKey="equity" stroke="url(#equityStrokeGrad)" strokeWidth={3} fillOpacity={1} fill="url(#equityFillGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
