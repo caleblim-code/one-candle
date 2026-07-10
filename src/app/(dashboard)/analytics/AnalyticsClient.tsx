@@ -160,15 +160,14 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
   }, [equityMode, equityData, balanceEquityData]);
 
   const maxDrawdown = useMemo(() => {
-    let peak = activeEquityData[0]?.equity || 0;
-    let peakIndex = activeEquityData[0]?.index || 0;
-    
-    let currentPeak = peak;
-    let currentPeakIndex = peakIndex;
+    let currentPeak = activeEquityData[0]?.equity || 0;
+    let currentPeakIndex = activeEquityData[0]?.index || 0;
 
     let maxDd = 0;
     let ddStart = 0;
     let ddEnd = 0;
+    let ddPeakValue = 0;
+    let ddTroughValue = 0;
 
     activeEquityData.forEach(d => {
       if (d.equity > currentPeak) {
@@ -181,9 +180,11 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
         maxDd = dd;
         ddStart = currentPeakIndex;
         ddEnd = d.index;
+        ddPeakValue = currentPeak;
+        ddTroughValue = d.equity;
       }
     });
-    return { value: maxDd, start: ddStart, end: ddEnd };
+    return { value: maxDd, start: ddStart, end: ddEnd, peakValue: ddPeakValue, troughValue: ddTroughValue };
   }, [activeEquityData]);
 
   const pnlByPeriodData = useMemo(() => {
@@ -532,8 +533,8 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
                 <XAxis dataKey="index" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} minTickGap={30} tickFormatter={(val) => activeEquityData[val]?.date || ''} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip content={<CustomTooltip />} />
-                {maxDrawdown.value > 0 && maxDrawdown.start !== undefined && maxDrawdown.end !== undefined && (
-                  <ReferenceArea x1={maxDrawdown.start} x2={maxDrawdown.end} strokeOpacity={0} fill="var(--danger)" fillOpacity={0.15} />
+                {maxDrawdown.value > 0 && (
+                  <ReferenceArea x1={maxDrawdown.start} x2={maxDrawdown.end} y1={maxDrawdown.troughValue} y2={maxDrawdown.peakValue} strokeOpacity={0} fill="var(--danger)" fillOpacity={0.15} />
                 )}
                 <Area type="monotone" dataKey="equity" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEquity)" />
               </AreaChart>

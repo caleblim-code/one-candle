@@ -146,7 +146,7 @@ export default function GoalsClient() {
           </div>
         ) : (
           activeGoals.map((goal: any) => {
-            const prog = progress[goal.id] || { currentPnl: 0, currentWinRate: 0, currentTrades: 0, tradesToday: 0 };
+            const prog = progress[goal.id] || { currentPnl: 0, grossLoss: 0, currentWinRate: 0, currentTrades: 0, tradesToday: 0 };
             return (
               <div key={goal.id} className="card animate-slide-up">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
@@ -166,7 +166,7 @@ export default function GoalsClient() {
 
                 <div style={{ marginTop: '1.5rem' }}>
                   {goal.profitTarget && renderProgressBar('Profit Target ($)', prog.currentPnl, goal.profitTarget)}
-                  {goal.maxLoss && renderProgressBar('Max Loss Limit ($)', prog.currentPnl < 0 ? Math.abs(prog.currentPnl) : 0, goal.maxLoss, true)}
+                  {goal.maxLoss && renderProgressBar('Max Loss Limit ($)', prog.grossLoss, goal.maxLoss, true)}
                   {goal.targetWinRate && renderProgressBar('Win Rate (%)', prog.currentWinRate, goal.targetWinRate)}
                   {goal.targetTrades && renderProgressBar('Target Trade Volume', prog.currentTrades, goal.targetTrades)}
                   {goal.maxTradesPerDay && renderProgressBar('Max Trades Per Day (Today)', prog.tradesToday, goal.maxTradesPerDay, true)}
