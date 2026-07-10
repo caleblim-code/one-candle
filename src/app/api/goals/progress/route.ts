@@ -9,6 +9,9 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const accountId = searchParams.get('account');
+    const offsetStr = searchParams.get('offset');
+    const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
+    
     if (!accountId) return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
 
     if (accountId !== 'all') {
@@ -42,6 +45,10 @@ export async function GET(req: Request) {
     todayEnd.setHours(23, 59, 59, 999);
 
     for (const goal of activeGoals) {
+      // Adjust goal start and end dates based on user's local timezone offset
+      const localStartDate = new Date(goal.startDate.getTime() + offset * 60000);
+      const localEndDate = new Date(goal.endDate.getTime() + offset * 60000);
+
       // Find all trades within the goal period
       const trades = await prisma.trade.findMany({
         where: {
@@ -49,14 +56,14 @@ export async function GET(req: Request) {
           OR: [
             {
               entryDate: {
-                gte: goal.startDate,
-                lte: goal.endDate
+                gte: localStartDate,
+                lte: localEndDate
               }
             },
             {
               exitDate: {
-                gte: goal.startDate,
-                lte: goal.endDate
+                gte: localStartDate,
+                lte: localEndDate
               }
             }
           ]
@@ -71,7 +78,7 @@ export async function GET(req: Request) {
 
       for (const trade of trades) {
         // Only count PnL and Win Rate if the trade was closed during the goal period
-        if (trade.status === 'Closed' && trade.exitDate && trade.exitDate >= goal.startDate && trade.exitDate <= goal.endDate) {
+        if (trade.status === 'Closed' && trade.exitDate && trade.exitDate >= localStartDate && trade.exitDate <= localEndDate) {
           if (trade.pnl !== null) {
             totalPnl += trade.pnl;
             closedTrades++;
@@ -80,7 +87,7 @@ export async function GET(req: Request) {
         }
         
         // Count Target Volume if the trade was entered during the goal period
-        if (trade.entryDate >= goal.startDate && trade.entryDate <= goal.endDate) {
+        if (trade.entryDate >= localStartDate && trade.entryDate <= localEndDate) {
           volumeCount++;
         }
         

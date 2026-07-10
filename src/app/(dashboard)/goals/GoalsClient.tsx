@@ -22,7 +22,9 @@ export default function GoalsClient() {
   const [maxTradesPerDay, setMaxTradesPerDay] = useState('');
 
   const { data, error, isLoading, mutate } = useSWR(accountId && accountId !== 'all' ? `/api/goals?account=${accountId}` : null, fetcher);
-  const { data: progressData } = useSWR(accountId && accountId !== 'all' ? `/api/goals/progress?account=${accountId}` : null, fetcher);
+  const timezoneOffset = new Date().getTimezoneOffset();
+  const { data: progressData } = useSWR(accountId && accountId !== 'all' 
+    ? `/api/goals/progress?account=${accountId}&offset=${timezoneOffset}` : null, fetcher);
 
   if (!accountId || accountId === 'all') {
     return (
