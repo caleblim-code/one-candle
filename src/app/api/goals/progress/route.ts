@@ -46,10 +46,20 @@ export async function GET(req: Request) {
       const trades = await prisma.trade.findMany({
         where: {
           accountId: goal.accountId,
-          entryDate: {
-            gte: goal.startDate,
-            lte: goal.endDate
-          }
+          OR: [
+            {
+              entryDate: {
+                gte: goal.startDate,
+                lte: goal.endDate
+              }
+            },
+            {
+              exitDate: {
+                gte: goal.startDate,
+                lte: goal.endDate
+              }
+            }
+          ]
         }
       });
 
@@ -57,15 +67,24 @@ export async function GET(req: Request) {
       let wins = 0;
       let closedTrades = 0;
       let tradesToday = 0;
+      let volumeCount = 0;
 
       for (const trade of trades) {
-        if (trade.pnl !== null && trade.status === 'Closed') {
-          totalPnl += trade.pnl;
-          closedTrades++;
-          if (trade.pnl > 0) wins++;
+        // Only count PnL and Win Rate if the trade was closed during the goal period
+        if (trade.status === 'Closed' && trade.exitDate && trade.exitDate >= goal.startDate && trade.exitDate <= goal.endDate) {
+          if (trade.pnl !== null) {
+            totalPnl += trade.pnl;
+            closedTrades++;
+            if (trade.pnl > 0) wins++;
+          }
         }
         
-        // Count trades today (for maxTradesPerDay limit)
+        // Count Target Volume if the trade was entered during the goal period
+        if (trade.entryDate >= goal.startDate && trade.entryDate <= goal.endDate) {
+          volumeCount++;
+        }
+        
+        // Count trades today (for maxTradesPerDay limit) based on entryDate
         if (trade.entryDate >= todayStart && trade.entryDate <= todayEnd) {
           tradesToday++;
         }
@@ -76,7 +95,7 @@ export async function GET(req: Request) {
       progress[goal.id] = {
         currentPnl: totalPnl,
         currentWinRate: winRate,
-        currentTrades: trades.length,
+        currentTrades: volumeCount,
         tradesToday: tradesToday
       };
     }
