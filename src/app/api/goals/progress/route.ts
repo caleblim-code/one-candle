@@ -54,7 +54,6 @@ export async function GET(req: Request) {
       });
 
       let totalPnl = 0;
-      let grossLoss = 0;
       let wins = 0;
       let closedTrades = 0;
       let tradesToday = 0;
@@ -64,7 +63,6 @@ export async function GET(req: Request) {
           totalPnl += trade.pnl;
           closedTrades++;
           if (trade.pnl > 0) wins++;
-          if (trade.pnl < 0) grossLoss += Math.abs(trade.pnl);
         }
         
         // Count trades today (for maxTradesPerDay limit)
@@ -77,7 +75,6 @@ export async function GET(req: Request) {
 
       progress[goal.id] = {
         currentPnl: totalPnl,
-        grossLoss: grossLoss,
         currentWinRate: winRate,
         currentTrades: trades.length,
         tradesToday: tradesToday

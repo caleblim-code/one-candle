@@ -166,7 +166,7 @@ export default function GoalsClient() {
 
                 <div style={{ marginTop: '1.5rem' }}>
                   {goal.profitTarget && renderProgressBar('Profit Target ($)', prog.currentPnl, goal.profitTarget)}
-                  {goal.maxLoss && renderProgressBar('Max Loss Limit ($)', prog.grossLoss, goal.maxLoss, true)}
+                  {goal.maxLoss && renderProgressBar('Max Loss Limit ($)', prog.currentPnl < 0 ? Math.abs(prog.currentPnl) : 0, goal.maxLoss, true)}
                   {goal.targetWinRate && renderProgressBar('Win Rate (%)', prog.currentWinRate, goal.targetWinRate)}
                   {goal.targetTrades && renderProgressBar('Target Trade Volume', prog.currentTrades, goal.targetTrades)}
                   {goal.maxTradesPerDay && renderProgressBar('Max Trades Per Day (Today)', prog.tradesToday, goal.maxTradesPerDay, true)}
