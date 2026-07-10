@@ -15,9 +15,19 @@ export default function SidebarNav() {
 
   useEffect(() => {
     fetch('/api/accounts').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setAccounts(data);
+      if (Array.isArray(data)) {
+        setAccounts(data);
+        if (!searchParams.has('account')) {
+          const defaultAcc = data.find(a => a.isDefault) || data[0];
+          if (defaultAcc) {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('account', defaultAcc.id);
+            router.replace(`${pathname}?${params.toString()}`);
+          }
+        }
+      }
     }).catch(() => {});
-  }, []);
+  }, [pathname, router, searchParams]);
 
   const handleAccountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const accountId = e.target.value;
@@ -86,6 +96,7 @@ export default function SidebarNav() {
       <Link href={createHref('/goals')} style={getStyle('/goals')}>Goals</Link>
       <Link href={createHref('/playbooks')} style={getStyle('/playbooks')}>Playbooks</Link>
       <Link href={createHref('/prop-firm')} style={getStyle('/prop-firm')}>Prop Firm</Link>
+      <Link href={createHref('/tools')} style={getStyle('/tools')}>Tools</Link>
       <Link href={createHref('/settings')} style={getStyle('/settings')}>Settings</Link>
 
       <div style={{ margin: '1rem 0', height: '1px', backgroundColor: 'var(--border)' }}></div>

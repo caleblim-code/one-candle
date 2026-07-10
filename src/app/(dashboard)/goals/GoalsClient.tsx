@@ -153,7 +153,7 @@ export default function GoalsClient() {
                   <div>
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       {goal.periodType} Goal 
-                      <span className="badge" style={{ backgroundColor: 'var(--accent)', color: '#000' }}>Active</span>
+                      <span className="badge" style={{ backgroundColor: 'var(--accent)', color: '#FFF' }}>Active</span>
                     </h3>
                     <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
                       {new Date(goal.startDate).toLocaleDateString()} - {new Date(goal.endDate).toLocaleDateString()}

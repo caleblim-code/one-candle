@@ -21,13 +21,22 @@ export async function GET(req: Request) {
     const accountId = searchParams.get('account');
     if (!accountId) return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
 
-    const account = await prisma.tradingAccount.findFirst({
-      where: { id: accountId, userId: session.id }
-    });
-    if (!account) return NextResponse.json({ error: 'Invalid account' }, { status: 403 });
+    if (accountId !== 'all') {
+      const account = await prisma.tradingAccount.findFirst({
+        where: { id: accountId, userId: session.id }
+      });
+      if (!account) return NextResponse.json({ error: 'Invalid account' }, { status: 403 });
+    }
+
+    const whereClause: any = {};
+    if (accountId !== 'all') {
+      whereClause.accountId = accountId;
+    } else {
+      whereClause.account = { userId: session.id };
+    }
 
     let goals = await prisma.goal.findMany({
-      where: { accountId },
+      where: whereClause,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -53,7 +62,7 @@ export async function GET(req: Request) {
 
         await prisma.goal.create({
           data: {
-            accountId,
+            accountId: goal.accountId,
             periodType: goal.periodType,
             startDate: currentStart,
             endDate: calculateEndDate(currentStart, goal.periodType),
@@ -72,7 +81,7 @@ export async function GET(req: Request) {
 
     if (hasRolledOver) {
       goals = await prisma.goal.findMany({
-        where: { accountId },
+        where: whereClause,
         orderBy: { createdAt: 'desc' }
       });
     }

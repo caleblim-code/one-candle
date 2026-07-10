@@ -156,6 +156,17 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
 
   const activeEquityData = equityMode === 'pnl' ? equityData : balanceEquityData;
 
+  const maxDrawdown = useMemo(() => {
+    let peak = activeEquityData[0]?.equity || 0;
+    let maxDd = 0;
+    activeEquityData.forEach(d => {
+      if (d.equity > peak) peak = d.equity;
+      const dd = peak - d.equity;
+      if (dd > maxDd) maxDd = dd;
+    });
+    return maxDd;
+  }, [activeEquityData]);
+
   const pnlByPeriodData = useMemo(() => {
     const map = new Map<string, number>();
     trades.forEach((t: any) => {
@@ -198,6 +209,48 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
       map.set(hour, (map.get(hour) || 0) + (t.pnl || 0));
     });
     return Array.from(map.entries()).map(([hour, pnl]) => ({ hour: `${hour}:00`, pnl, sort: hour })).sort((a, b) => a.sort - b.sort);
+  }, [trades]);
+
+  const longShortData = useMemo(() => {
+    let longPnl = 0;
+    let shortPnl = 0;
+
+    trades.forEach((t: any) => {
+      const pnl = t.pnl || 0;
+      if (t.direction === 'Long') {
+        longPnl += pnl;
+      } else if (t.direction === 'Short') {
+        shortPnl += pnl;
+      }
+    });
+
+    return [
+      { name: 'Long', pnl: longPnl },
+      { name: 'Short', pnl: shortPnl }
+    ];
+  }, [trades]);
+
+  const sessionData = useMemo(() => {
+    let sydneyPnl = 0;
+    let tokyoPnl = 0;
+    let londonPnl = 0;
+    let nyPnl = 0;
+
+    trades.forEach((t: any) => {
+      const pnl = t.pnl || 0;
+      const hour = new Date(t.entryDate).getUTCHours();
+      if (hour >= 21 || hour < 23) sydneyPnl += pnl;
+      else if (hour >= 23 || hour < 7) tokyoPnl += pnl;
+      else if (hour >= 7 && hour < 12) londonPnl += pnl;
+      else if (hour >= 12 && hour < 21) nyPnl += pnl;
+    });
+
+    return [
+      { name: 'Sydney', pnl: sydneyPnl },
+      { name: 'Tokyo', pnl: tokyoPnl },
+      { name: 'London', pnl: londonPnl },
+      { name: 'New York', pnl: nyPnl }
+    ];
   }, [trades]);
 
   const mistakeData = useMemo(() => {
@@ -431,6 +484,10 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
           <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Largest Loss</span>
           <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>${stats.largestLoss.toFixed(2)}</span>
         </div>
+        <div className="card" style={statCardStyle}>
+          <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Max Drawdown</span>
+          <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>-${maxDrawdown.toFixed(2)}</span>
+        </div>
       </div>
 
       {/* Main Charts */}
@@ -578,6 +635,46 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
                 }} />
                 <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
                   {mentalStateData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? 'var(--accent)' : 'var(--danger)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Long vs Short Performance */}
+        <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Long vs Short Performance</h3>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={longShortData} margin={{ left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  {longShortData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? 'var(--accent)' : 'var(--danger)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Trading Sessions Performance */}
+        <div className="card" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Trading Sessions Performance</h3>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sessionData} margin={{ left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                  {sessionData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? 'var(--accent)' : 'var(--danger)'} />
                   ))}
                 </Bar>

@@ -11,14 +11,23 @@ export async function GET(req: Request) {
     const accountId = searchParams.get('account');
     if (!accountId) return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
 
-    const account = await prisma.tradingAccount.findFirst({
-      where: { id: accountId, userId: session.id }
-    });
-    if (!account) return NextResponse.json({ error: 'Invalid account' }, { status: 403 });
+    if (accountId !== 'all') {
+      const account = await prisma.tradingAccount.findFirst({
+        where: { id: accountId, userId: session.id }
+      });
+      if (!account) return NextResponse.json({ error: 'Invalid account' }, { status: 403 });
+    }
+
+    const whereClause: any = { status: 'Active' };
+    if (accountId !== 'all') {
+      whereClause.accountId = accountId;
+    } else {
+      whereClause.account = { userId: session.id };
+    }
 
     // Fetch active goals
     const activeGoals = await prisma.goal.findMany({
-      where: { accountId, status: 'Active' }
+      where: whereClause
     });
 
     if (activeGoals.length === 0) {
@@ -36,7 +45,7 @@ export async function GET(req: Request) {
       // Find all trades within the goal period
       const trades = await prisma.trade.findMany({
         where: {
-          accountId,
+          accountId: goal.accountId,
           entryDate: {
             gte: goal.startDate,
             lte: goal.endDate
