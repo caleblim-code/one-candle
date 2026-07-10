@@ -154,30 +154,33 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     return result;
   }, [equityData, transactions, accountBalance]);
 
-  const activeEquityData = equityMode === 'pnl' ? equityData : balanceEquityData;
+  const activeEquityData = useMemo(() => {
+    const baseData = equityMode === 'pnl' ? equityData : balanceEquityData;
+    return baseData.map((d, index) => ({ ...d, index }));
+  }, [equityMode, equityData, balanceEquityData]);
 
   const maxDrawdown = useMemo(() => {
     let peak = activeEquityData[0]?.equity || 0;
-    let peakDate = activeEquityData[0]?.date || '';
+    let peakIndex = activeEquityData[0]?.index || 0;
     
     let currentPeak = peak;
-    let currentPeakDate = peakDate;
+    let currentPeakIndex = peakIndex;
 
     let maxDd = 0;
-    let ddStart = '';
-    let ddEnd = '';
+    let ddStart = 0;
+    let ddEnd = 0;
 
     activeEquityData.forEach(d => {
       if (d.equity > currentPeak) {
         currentPeak = d.equity;
-        currentPeakDate = d.date;
+        currentPeakIndex = d.index;
       }
       
       const dd = currentPeak - d.equity;
       if (dd > maxDd) {
         maxDd = dd;
-        ddStart = currentPeakDate;
-        ddEnd = d.date;
+        ddStart = currentPeakIndex;
+        ddEnd = d.index;
       }
     });
     return { value: maxDd, start: ddStart, end: ddEnd };
@@ -526,13 +529,13 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} minTickGap={30} />
+                <XAxis dataKey="index" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} minTickGap={30} tickFormatter={(val) => activeEquityData[val]?.date || ''} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip content={<CustomTooltip />} />
-                {maxDrawdown.value > 0 && maxDrawdown.start && maxDrawdown.end && (
+                {maxDrawdown.value > 0 && maxDrawdown.start !== undefined && maxDrawdown.end !== undefined && (
                   <ReferenceArea x1={maxDrawdown.start} x2={maxDrawdown.end} strokeOpacity={0} fill="var(--danger)" fillOpacity={0.15} />
                 )}
-                <Area type="stepAfter" dataKey="equity" stroke="var(--accent)" strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
+                <Area type="monotone" dataKey="equity" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEquity)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
