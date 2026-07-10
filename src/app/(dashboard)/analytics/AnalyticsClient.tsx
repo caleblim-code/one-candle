@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceArea } from 'recharts';
 
 import useSWR from 'swr';
 import DashboardLoading from '../dashboard/loading';
@@ -158,13 +158,29 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
 
   const maxDrawdown = useMemo(() => {
     let peak = activeEquityData[0]?.equity || 0;
+    let peakDate = activeEquityData[0]?.date || '';
+    
+    let currentPeak = peak;
+    let currentPeakDate = peakDate;
+
     let maxDd = 0;
+    let ddStart = '';
+    let ddEnd = '';
+
     activeEquityData.forEach(d => {
-      if (d.equity > peak) peak = d.equity;
-      const dd = peak - d.equity;
-      if (dd > maxDd) maxDd = dd;
+      if (d.equity > currentPeak) {
+        currentPeak = d.equity;
+        currentPeakDate = d.date;
+      }
+      
+      const dd = currentPeak - d.equity;
+      if (dd > maxDd) {
+        maxDd = dd;
+        ddStart = currentPeakDate;
+        ddEnd = d.date;
+      }
     });
-    return maxDd;
+    return { value: maxDd, start: ddStart, end: ddEnd };
   }, [activeEquityData]);
 
   const pnlByPeriodData = useMemo(() => {
@@ -239,7 +255,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     trades.forEach((t: any) => {
       const pnl = t.pnl || 0;
       const hour = new Date(t.entryDate).getUTCHours();
-      if (hour >= 21 || hour < 23) sydneyPnl += pnl;
+      if (hour >= 21 && hour < 23) sydneyPnl += pnl;
       else if (hour >= 23 || hour < 7) tokyoPnl += pnl;
       else if (hour >= 7 && hour < 12) londonPnl += pnl;
       else if (hour >= 12 && hour < 21) nyPnl += pnl;
@@ -486,7 +502,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
         </div>
         <div className="card" style={statCardStyle}>
           <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Max Drawdown</span>
-          <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>-${maxDrawdown.toFixed(2)}</span>
+          <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>-${maxDrawdown.value.toFixed(2)}</span>
         </div>
       </div>
 
@@ -510,10 +526,13 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} minTickGap={30} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="equity" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEquity)" />
+                {maxDrawdown.value > 0 && maxDrawdown.start && maxDrawdown.end && (
+                  <ReferenceArea x1={maxDrawdown.start} x2={maxDrawdown.end} strokeOpacity={0} fill="var(--danger)" fillOpacity={0.15} />
+                )}
+                <Area type="stepAfter" dataKey="equity" stroke="var(--accent)" strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

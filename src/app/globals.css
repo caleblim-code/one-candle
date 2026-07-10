@@ -8,6 +8,7 @@
   --text-muted: #64748B;
   --border: rgba(0, 0, 0, 0.08);
   --danger: #DD5E56;
+  --warning: #F59E0B;
   --font-sans: 'Outfit', sans-serif;
   --font-mono: 'Space Mono', monospace;
 }
