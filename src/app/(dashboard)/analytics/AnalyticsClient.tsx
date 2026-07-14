@@ -42,7 +42,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
         if (filterAsset !== 'All' && t.assetClass !== filterAsset) return false;
         if (filterSetup !== 'All' && t.setupTag !== filterSetup) return false;
         if (filterDate !== 'All') {
-          const tradeDate = new Date(t.entryDate);
+          const tradeDate = new Date(t.exitDate || t.entryDate);
           const now = new Date();
           if (filterDate === 'This Month') {
             if (tradeDate.getMonth() !== now.getMonth() || tradeDate.getFullYear() !== now.getFullYear()) return false;
