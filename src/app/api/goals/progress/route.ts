@@ -39,10 +39,17 @@ export async function GET(req: Request) {
 
     const progress: Record<string, any> = {};
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    // Calculate 'today' boundaries in user's local timezone
+    const nowUtc = new Date();
+    const localNow = new Date(nowUtc.getTime() - offset * 60000);
+    const localTodayStart = new Date(localNow);
+    localTodayStart.setUTCHours(0, 0, 0, 0);
+    const localTodayEnd = new Date(localNow);
+    localTodayEnd.setUTCHours(23, 59, 59, 999);
+    
+    // Convert back to UTC for database comparison
+    const todayStartUTC = new Date(localTodayStart.getTime() + offset * 60000);
+    const todayEndUTC = new Date(localTodayEnd.getTime() + offset * 60000);
 
     for (const goal of activeGoals) {
       // Adjust goal start and end dates based on user's local timezone offset
@@ -71,28 +78,32 @@ export async function GET(req: Request) {
       });
 
       let totalPnl = 0;
+      let grossLoss = 0;
       let wins = 0;
       let closedTrades = 0;
       let tradesToday = 0;
       let volumeCount = 0;
 
       for (const trade of trades) {
+        const tradeDate = trade.exitDate || trade.entryDate;
+
         // Only count PnL and Win Rate if the trade was closed during the goal period
         if (trade.status === 'Closed' && trade.exitDate && trade.exitDate >= localStartDate && trade.exitDate <= localEndDate) {
           if (trade.pnl !== null) {
             totalPnl += trade.pnl;
+            if (trade.pnl < 0) grossLoss += Math.abs(trade.pnl);
             closedTrades++;
             if (trade.pnl > 0) wins++;
           }
         }
         
-        // Count Target Volume if the trade was entered during the goal period
-        if (trade.entryDate >= localStartDate && trade.entryDate <= localEndDate) {
+        // Count Target Volume if the trade was active during the goal period
+        if (tradeDate && tradeDate >= localStartDate && tradeDate <= localEndDate) {
           volumeCount++;
         }
         
-        // Count trades today (for maxTradesPerDay limit) based on entryDate
-        if (trade.entryDate >= todayStart && trade.entryDate <= todayEnd) {
+        // Count trades today (for maxTradesPerDay limit)
+        if (tradeDate && tradeDate >= todayStartUTC && tradeDate <= todayEndUTC) {
           tradesToday++;
         }
       }
@@ -101,9 +112,10 @@ export async function GET(req: Request) {
 
       progress[goal.id] = {
         currentPnl: totalPnl,
+        grossLoss,
         currentWinRate: winRate,
         currentTrades: volumeCount,
-        tradesToday: tradesToday
+        tradesToday
       };
     }
 
