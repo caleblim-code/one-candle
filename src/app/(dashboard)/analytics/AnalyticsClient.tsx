@@ -199,15 +199,7 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     return { value: maxDdAmount, percentage: maxDdPercentage, start: ddStart, end: ddEnd, peakValue: ddPeakValue, troughValue: ddTroughValue };
   }, [activeEquityData, equityMode, accountBalance]);
 
-  const chartData = useMemo(() => {
-    if (maxDrawdown.value <= 0) return activeEquityData;
-    return activeEquityData.map(d => {
-      if (d.index >= maxDrawdown.start && d.index <= maxDrawdown.end) {
-        return { ...d, drawdownEquity: d.equity };
-      }
-      return d;
-    });
-  }, [activeEquityData, maxDrawdown]);
+
 
   const pnlByPeriodData = useMemo(() => {
     const map = new Map<string, number>();
@@ -546,25 +538,48 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ left: -20 }}>
+              <AreaChart data={activeEquityData} margin={{ left: -20 }}>
                 <defs>
-                  <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorDrawdown" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--danger)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--danger)" stopOpacity={0}/>
-                  </linearGradient>
+                  {(() => {
+                    const N = activeEquityData.length;
+                    const ddStartPct = N > 1 ? (maxDrawdown.start / (N - 1)) * 100 : 0;
+                    const ddEndPct = N > 1 ? (maxDrawdown.end / (N - 1)) * 100 : 0;
+                    const pad = 0.2; // Tiny padding to smooth transition
+                    return (
+                      <>
+                        <linearGradient id="horizontalColor" x1="0" y1="0" x2="1" y2="0">
+                          {maxDrawdown.value > 0 ? (
+                            <>
+                              <stop offset={`${Math.max(0, ddStartPct - pad)}%`} stopColor="var(--accent)" />
+                              <stop offset={`${ddStartPct + pad}%`} stopColor="var(--danger)" />
+                              <stop offset={`${Math.max(ddStartPct + pad, ddEndPct - pad)}%`} stopColor="var(--danger)" />
+                              <stop offset={`${ddEndPct + pad}%`} stopColor="var(--accent)" />
+                            </>
+                          ) : (
+                            <stop offset="100%" stopColor="var(--accent)" />
+                          )}
+                        </linearGradient>
+                        <linearGradient id="verticalFade" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="white" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="white" stopOpacity={0} />
+                        </linearGradient>
+                        <mask id="verticalFadeMask">
+                          <rect x="0" y="0" width="100%" height="100%" fill="url(#verticalFade)" />
+                        </mask>
+                      </>
+                    );
+                  })()}
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="index" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} minTickGap={30} tickFormatter={(val) => activeEquityData[val]?.date || ''} />
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="equity" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorEquity)" />
-                {maxDrawdown.value > 0 && (
-                  <Area type="monotone" dataKey="drawdownEquity" stroke="var(--danger)" strokeWidth={3} fillOpacity={1} fill="url(#colorDrawdown)" connectNulls={false} />
-                )}
+                
+                {/* Fill Area (Masked to fade out vertically) */}
+                <Area type="monotone" dataKey="equity" stroke="none" fillOpacity={1} fill="url(#horizontalColor)" style={{ mask: 'url(#verticalFadeMask)', WebkitMask: 'url(#verticalFadeMask)' }} activeDot={false} />
+                
+                {/* Stroke Line (Unmasked, solid line) */}
+                <Area type="monotone" dataKey="equity" stroke="url(#horizontalColor)" fill="none" strokeWidth={3} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
