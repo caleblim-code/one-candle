@@ -163,7 +163,8 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
     let currentPeak = activeEquityData[0]?.equity || 0;
     let currentPeakIndex = activeEquityData[0]?.index || 0;
 
-    let maxDd = 0;
+    let maxDdPercentage = 0;
+    let maxDdAmount = 0;
     let ddStart = 0;
     let ddEnd = 0;
     let ddPeakValue = 0;
@@ -175,17 +176,28 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
         currentPeakIndex = d.index;
       }
       
-      const dd = currentPeak - d.equity;
-      if (dd > maxDd) {
-        maxDd = dd;
+      const ddAmount = currentPeak - d.equity;
+      
+      // Calculate percentage based on actual balance
+      let peakForPct = currentPeak;
+      if (equityMode === 'pnl') {
+        peakForPct = accountBalance + currentPeak;
+      }
+      
+      const ddPercentage = peakForPct > 0 ? (ddAmount / peakForPct) * 100 : 0;
+
+      // Use percentage as the primary metric to determine max drawdown
+      if (ddPercentage > maxDdPercentage) {
+        maxDdPercentage = ddPercentage;
+        maxDdAmount = ddAmount;
         ddStart = currentPeakIndex;
         ddEnd = d.index;
         ddPeakValue = currentPeak;
         ddTroughValue = d.equity;
       }
     });
-    return { value: maxDd, start: ddStart, end: ddEnd, peakValue: ddPeakValue, troughValue: ddTroughValue };
-  }, [activeEquityData]);
+    return { value: maxDdAmount, percentage: maxDdPercentage, start: ddStart, end: ddEnd, peakValue: ddPeakValue, troughValue: ddTroughValue };
+  }, [activeEquityData, equityMode, accountBalance]);
 
   const chartData = useMemo(() => {
     if (maxDrawdown.value <= 0) return activeEquityData;
@@ -516,7 +528,9 @@ export default function AnalyticsClient({ accountId }: { accountId: string }) {
         </div>
         <div className="card" style={statCardStyle}>
           <span className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Max Drawdown</span>
-          <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>-${maxDrawdown.value.toFixed(2)}</span>
+          <span className="mono fw-bold text-danger" style={{ fontSize: '1.5rem' }}>
+            {maxDrawdown.percentage > 0 ? `-${maxDrawdown.percentage.toFixed(2)}%` : '0.00%'}
+          </span>
         </div>
       </div>
 
